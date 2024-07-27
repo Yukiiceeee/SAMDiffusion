@@ -1,0 +1,5 @@
+# inference 
+python3 infer_aff.py --infer_list DiffMask_VOC/VOC_Multi_Attention_aeroplane_sub_8000_NoClipRetrieval_sample/train_image --voc12_root DiffMask_VOC/VOC_Multi_Attention_aeroplane_sub_8000_NoClipRetrieval_sample/train_image --network network.resnet38_aff --weights ./workdir/VOC_aeroplane_test_aff.pth --cam_dir ./DiffMask_VOC/VOC_Multi_Attention_aeroplane_sub_8000_NoClipRetrieval_sample/npy --out_rw ./DiffMask_VOC/VOC_Multi_Attention_aeroplane_sub_8000_NoClipRetrieval_sample/refine_gt
+
+
+# python3 infer_aff.py --infer_list /mmu-ocr/weijiawu/Code/Diffusion_Model/Diffusion_Sem/prompt-to-prompt/Diffusion/test/train_image --voc12_root /mmu-ocr/weijiawu/Code/Diffusion_Model/Diffusion_Sem/prompt-to-prompt/Diffusion/test/train_image --network network.resnet38_aff --weights ./workdir/car_aff.pth --cam_dir /mmu-ocr/weijiawu/Code/Diffusion_Model/Diffusion_Sem/prompt-to-prompt/Diffusion/test/npy --out_rw /mmu-ocr/weijiawu/Code/Diffusion_Model/Diffusion_Sem/prompt-to-prompt/Diffusion/test/refine_gt
