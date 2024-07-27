@@ -18,9 +18,7 @@ from IPython.display import Image, display
 from clip_retrieval.clip_client import ClipClient, Modality
 from tqdm import tqdm
 # import openai
-#export OPENAI_API_KEY="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"
 
-# openai.api_key = "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"
 # openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
