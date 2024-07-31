@@ -111,7 +111,6 @@ pyarrow==7.0.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
 pydeck==0.8.0
-pydensecrf @ git+https://github.com/lucasb-eyer/pydensecrf.git@0d53acbcf5123d4c88040fe68fbb9805fc5b2fb9
 pyDeprecate==0.3.1
 Pygments==2.13.0
 Pympler==1.0.1

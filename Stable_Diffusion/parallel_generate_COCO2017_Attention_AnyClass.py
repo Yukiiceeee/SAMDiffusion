@@ -17,9 +17,6 @@ import argparse
 from IPython.display import Image, display
 from clip_retrieval.clip_client import ClipClient, Modality
 from tqdm import tqdm
-# import openai
-
-# openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 

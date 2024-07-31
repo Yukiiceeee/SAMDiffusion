@@ -13,13 +13,6 @@ import multiprocessing as mp
 import threading
 from random import choice
 import os
-# import openai
-
-# openai.api_key = os.getenv("OPENAI_API_KEY")
-
-
-
-
 
 MY_TOKEN = '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'
 LOW_RESOURCE = False 

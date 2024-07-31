@@ -17,9 +17,7 @@ import argparse
 from IPython.display import Image, display
 from clip_retrieval.clip_client import ClipClient, Modality
 from tqdm import tqdm
-# import openai
 
-# openai.api_key = os.getenv("OPENAI_API_KEY")
 
 import pydensecrf.densecrf as dcrf
 from pydensecrf.utils import unary_from_labels, create_pairwise_bilateral, create_pairwise_gaussian
