@@ -441,57 +441,57 @@ def run(prompts, controller, latent=None, generator=None,out_put = "",ldm_stable
     return images_here, x_t
 
 
-def clipretrieval(text,check):
-    sensitive_word = ["vector","stock","3d","-3d","-","blur","Vector","blurred","shot","close-up","Headlight","Stock","headlights","Defocused","Close-up","3D","cartoon","interior","internal"] 
-    prompts = []
-    for prompt in tqdm(text):
-        try:
-#             ClipClient(url="https://knn.laion.ai/knn-service", indice_name="laion5B-L-14")
-            client = ClipClient(
-                url="https://knn.laion.ai/knn-service",
-                indice_name="laion5B-L-14",
-                aesthetic_score=9,
-                aesthetic_weight=0.5,
-                modality=Modality.IMAGE,
-                num_images=3000,
-            )
-            results = client.query(text=prompt)
-        except:
-            client = ClipClient(
-                url="https://knn.laion.ai/knn-service",
-                indice_name="laion5B-L-14",
-                aesthetic_score=9,
-                aesthetic_weight=0.5,
-                modality=Modality.IMAGE,
-                num_images=1000,
-            )
-            results = client.query(text=prompt)
+# def clipretrieval(text,check):
+#     sensitive_word = ["vector","stock","3d","-3d","-","blur","Vector","blurred","shot","close-up","Headlight","Stock","headlights","Defocused","Close-up","3D","cartoon","interior","internal"] 
+#     prompts = []
+#     for prompt in tqdm(text):
+#         try:
+# #             ClipClient(url="https://knn.laion.ai/knn-service", indice_name="laion5B-L-14")
+#             client = ClipClient(
+#                 url="https://knn.laion.ai/knn-service",
+#                 indice_name="laion5B-L-14",
+#                 aesthetic_score=9,
+#                 aesthetic_weight=0.5,
+#                 modality=Modality.IMAGE,
+#                 num_images=3000,
+#             )
+#             results = client.query(text=prompt)
+#         except:
+#             client = ClipClient(
+#                 url="https://knn.laion.ai/knn-service",
+#                 indice_name="laion5B-L-14",
+#                 aesthetic_score=9,
+#                 aesthetic_weight=0.5,
+#                 modality=Modality.IMAGE,
+#                 num_images=1000,
+#             )
+#             results = client.query(text=prompt)
             
-        for i,line in enumerate(results):
-            caption = line["caption"]
-            caption_split = caption.split(" ")
-            continue_flag = True
+#         for i,line in enumerate(results):
+#             caption = line["caption"]
+#             caption_split = caption.split(" ")
+#             continue_flag = True
             
-            for chec in check:
-                sen_flag = True
-                for c in sensitive_word:
-                    if c in caption_split:
-                        sen_flag = False
+#             for chec in check:
+#                 sen_flag = True
+#                 for c in sensitive_word:
+#                     if c in caption_split:
+#                         sen_flag = False
 
-                if chec in caption_split[:5] and sen_flag:
-                    continue_flag=False
+#                 if chec in caption_split[:5] and sen_flag:
+#                     continue_flag=False
                     
-            if continue_flag:
-                continue
+#             if continue_flag:
+#                 continue
                 
-            if len(caption_split)>50:
-                continue
-#             if ""
-            prompts.append("Photo of "+caption)
+#             if len(caption_split)>50:
+#                 continue
+# #             if ""
+#             prompts.append("Photo of "+caption)
     
-    return prompts
+#     return prompts
 
-def sub_processor(pid , args):
+def sub_processor(pid, args, prompts_list):
     torch.cuda.set_device(pid)
     text = 'processor %d' % pid
     print(text)
@@ -501,280 +501,70 @@ def sub_processor(pid , args):
     GUIDANCE_SCALE = 7.5
     MAX_NUM_WORDS = 77
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-#     ldm_stable = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4")
     ldm_stable = StableDiffusionPipeline.from_pretrained("CompVis/stable-diffusion-v1-4", use_auth_token=args.MY_TOKEN).to(device)
     tokenizer = ldm_stable.tokenizer
 
-    number_per_thread_num = int(int(args.image_number)/int(args.thread_num))
-    
-    image_cnt = pid * (number_per_thread_num*2) + 200000
-    
-    image_path = os.path.join(args.output,"train_image")
-    npy_path = os.path.join(args.output,"npy")
+    number_per_thread_num = int(int(args.image_number) / int(args.thread_num))
+    image_cnt = pid * number_per_thread_num + 200000
+
+    image_path = os.path.join(args.output, "train_image")
+    npy_path = os.path.join(args.output, "npy")
     
     if not os.path.exists(image_path):
         os.makedirs(image_path)
     if not os.path.exists(npy_path):
         os.makedirs(npy_path)
-    
-#     prompts_list = ["Photo of a {}".format(args.classes),
-#                    "a {}".format(args.classes),
-#                    "{}".format(args.classes)]
-    
-    # bird         https://byjus.com/english/birds-name/
-    bird_sub_classes = ["Masai Ostrich","Macaw","Eagle","Duck","Hen","Parrot","Peacock","Dove","Stork","Swan","Pigeon","Goose",
-                        "Pelican","Macaw","Parakeet","Finches","Crow","Raven","Vulture","Hawk","Crane","Penguin", "Hummingbird",
-                        "Sparrow","Woodpecker","Hornbill","Owl","Myna","Cuckoo","Turkey","Quail","Ostrich","Emu","Cockatiel"
-                        ,"Kingfisher","Kite","Cockatoo","Nightingale","Blue jay","Magpie","Goldfinch","Robin","Swallow",
-                        "Starling","Pheasant","Toucan","Canary","Seagull","Heron","Potoo","Bush warbler","Barn swallow",
-                        "Cassowary","Mallard","Common swift","Falcon","Megapode","Spoonbill","Ospreys","Coot","Rail",
-                        "Budgerigar","Wren","Lark","Sandpiper","Arctic tern","Lovebird","Conure","Rallidae","Bee-eater",
-                        "Grebe","Guinea fowl","Passerine","Albatross","Moa","Kiwi","Nightjar","Oilbird","Gannet","Thrush",
-                        "Avocet","Catbird","Bluebird","Roadrunner","Dunnock","Northern cardinal","Teal",
-                        "Northern shoveler","Gadwall","Northern pintail",
-                        "Hoatzin","Kestrel","Oriole","Partridge","Tailorbird","Wagtail","Weaverbird","Skylark"]
-    
-    # boat No clipretrieval
-#     boat_sub_classes = ["Fishing","Dinghy","Deck","Bowrider","Catamaran","Cuddy Cabins","Centre Console","House","Trawler","Cabin Cruiser","Game","Motor Yacht",
-#                         "Runabout","Jet","Pontoon","Sedan Bridge","","",""]
-    boat_sub_classes = [""]
-    
-    
-    sofa_sub_classes = [""]
-    
-    tvmonitor_sub_classes = [""]
-    
-    
-    #train
-    train_sub_classes = [""]
-    
-    #diningtable
-    diningtable_sub_classes = [""]
-    
-    # cat         https://www.purina.com/cats/cat-breeds?page=0
-    cat_sub_classes = ["Abyssinian","American Bobtail","American Curl","American Shorthair","American Wirehair",
-                       "Balinese-Javanese","Bengal","Birman","Bombay","British Shorthair","Burmese","Chartreux Cat",
-                        "Cornish Rex","Devon Rex","Egyptian Mau","European Burmese","Exotic Shorthair","Havana Brown",
-                       "Himalayan","Japanese Bobtail","Korat","LaPerm", "Maine Coon","Manx","Munchkin",
-                       "Norwegian Forest","Ocicat","Oriental","Persian","Peterbald","Pixiebob","Ragamuffin",
-                       "Ragdoll","Russian Blue","Savannah","Scottish Fold","Selkirk Rex","Siamese","Siberian",
-                       "Singapura","Somali","Sphynx","Tonkinese","Toyger","Turkish Angora","Turkish Van","","","","","","","",""]
-    
-    # cow         https://www.midwestdairy.com/farm-life/dairy-cows/
-    cow_sub_classes = ["Ayrshire","Brown Swiss","Guernsey","Holstein","Jersey",
-                       "Milking Shorthorn","Red & White", "small Ayrshire","small Brown Swiss","small Guernsey",
-                       "small Holstein","small Jersey",
-                       "small Milking Shorthorn","small Red & White", "small ",
-                       "small","small","small","small","small","small","","","","","","","","","","","","","","","",""]
-    
-    # pottedplant         https://www.houseplantsexpert.com/common-house-plants.html
-    pottedplant_sub_classes = ["Spider","Aloe Vera","Peace Lily","Jade","African Violet",
-                       "Weeping Fig","Baby Rubber","Bromeliads","Calathea","Dracaena","Ficus","Orchid","Eternal Flame",
-                               "Rattlesnake","Pin Stripe Calathea","Barberton Daisy","Areca Palm",
-                             "Corn","","","","","","","","",""]
-    
-    # horse         https://www.thesprucepets.com/most-popular-horse-breeds-1886146
-    horse_sub_classes = ["American Quarter","Arabian","Thoroughbred","Appaloosa","Morgan",
-                       "Warmbloods","Ponies","Grade","Gaited Breeds","Draft Breeds","","","","","","","","",""]
-    
-    # sheep         https://petkeen.com/popular-types-of-sheep-breeds/
-    sheep_sub_classes = ["Merino Wool","Rambouillet","Suffolk","Hampshire","Katahdin",
-                       "Dorper","Dorset","Southdown","Karakul","Lincoln","Icelandic","Navajo Churro","","","","","","",""]
-    
-    
-    # dog         https://www.purina.com/dogs/dog-breeds
-    dog_sub_classes = ["Affenpinscher","Afghan Hound","Airedale Terrier","Akita","Alaskan Malamute",
-                       "American English Coonhound","American Eskimo Dog","American Foxhound","American Staffordshire Terrier","American Water Spaniel","Anatolian Shepherd","Australian Cattle","Australian Shepherd","Australian Terrier",
-                      "Basenji","Basset Hound","Beagle","Bearded Collie","Beauceron","Bedlington Terrier","Belgian Malinois",
-                      "Belgian","Belgian Tervuren","Berger Picard","Bernese Mountain","Bichon Frise","Black and Tan Coonhound"
-                      ,"Black Russian Terrier","Bloodhound","Bluetick Coonhound","Boerboel","Border Collie","Border Terrier"
-                      ,"Borzoi","Boston Terrier","Bouvier des Flandres","Boxer","Boykin Spaniel","Briard","Brittany","Brussels Griffon"
-                      ,"Bull Terrier","Bull","Bullmastiff","Cairn Terrier","Canaan","Cane Corso","Cardigan Welsh Corgi","Cavalier King Charles Spaniel"
-                      ,"Cesky Terrier","Chesapeake Bay Retriever","Chihuahua","Chinese Crested","Chinese Shar-Pei","Chinook",
-                      "Chow Chow","Cirneco dell’Etna","Clumber Spaniel","Cocker Spaniel","Collie","Corgi","Coton de Tulear",
-                       "Curly-Coated Retriever","Dachshund","Dalmatian","Dandie Dinmont Terrier","Doberman Pinscher",
-                       "Dogue de Bordeaux","English Cocker Spaniel","English Foxhound","English Setter","Whippet","Wire Fox Terrier"
-                      ,"Wirehaired Pointing Griffon","Wirehaired Vizsla","Xoloitzcuintli","Finnish Spitz","Glen of Imaal Terrier",
-                      "Great Pyrenees","Irish Setter","Irish Water Spaniel","Keeshond","Labrador Retriever","Lagotto Romagnolo",
-                      "Leonberger","Manchester Terrier","Mastiff","Miniature Bull Terrier","Miniature Pinscher","Neapolitan Mastiff",
-                      "Norwegian Elkhound","Nova Scotia Duck Tolling Retriever","Otterhound","Papillon",
-                       "","","","","","","","","","","","","","","","","","","","","","","","","","","","","","","",""]
 
-    
-    # bus         https://simple.wikipedia.org/wiki/Types_of_buses
-    bus_sub_classes = ["Coach","Motor","School","Shuttle","Mini",
-                       "Minicoach","Double-decker","Single-decker","Low-floor","Step-entrance","Trolley",
-                        "Articulated","Guided","Neighbourhood","Gyrobus","Hybrid","Police",
-                       "Open top","Electric","Transit","Tour","Commuter","Party",""]
-    
-    
-    # car         https://www.caranddriver.com/shopping-advice/g26100588/car-types/
-    car_sub_classes = ["SEDAN","COUPE","SPORTS","STATION WAGON","HATCHBACK",
-                       "CONVERTIBLE","SPORT-UTILITY VEHICLE","MINIVAN","PICKUP TRUCK","IT DOESN'T STOP THERE",""]
-    
-    more_prompt_for_car = ["Photo of a car in the street", "Photo of a car in the road",   "Photo of a car in the street at night",      "Photo of the back of a car", "Photo of the overturn of a car"]
-#     car_sub_classes_2 = ["photo of a car"]
-#     "photo of a car in street"
-    
-    
-    map_dict = {"bird":bird_sub_classes,"boat":boat_sub_classes,"cat":cat_sub_classes,"bus":bus_sub_classes,
-                "cow":cow_sub_classes,"dog":dog_sub_classes,"horse":horse_sub_classes,"pottedplant":pottedplant_sub_classes,
-               "sheep":sheep_sub_classes,"diningtable":diningtable_sub_classes,"sofa":sofa_sub_classes,
-                "train":train_sub_classes,"tvmonitor":tvmonitor_sub_classes}
-    
-    sub_classes = ["bird","cat","bus","boat","cow","dog","horse","pottedplant","sheep","diningtable","sofa","train","tvmonitor"]
-    
-    if args.classes in sub_classes:
-        prompts_list = ["Photo of a {} {}"]
-        sub_cls = map_dict[args.classes]
-        sub_classes_list = [prompts_list[0].format(i,args.classes) for i in sub_cls]
-#         sub_classes_list = clipretrieval(sub_classes_list,[args.classes])
-        print("prompt number:",len(sub_classes_list))
-        
-    elif args.classes == "diningtable":
-        diningtable_sub_classes = ["Photo of a table"]
-        
-    elif args.classes == "chair":
-        chair_sub_classes = ["Photo of a chair"]
-        
-    
-        
-    elif args.classes == "bottle":
-        bottle_sub_classes = ["Photo of a bottle"]
-
-    elif args.classes == "car":
-        car_sub_classes = ["Photo of a {} car".format(name) for name in car_sub_classes]
-        car_sub_classes = car_sub_classes + more_prompt_for_car
-        car_sub_classes = clipretrieval(car_sub_classes,["car"])
-#         car_sub_classes = car_sub_classes_2
-
-    elif args.classes == "aeroplane":
-        aeroplane_sub_classes = ["Photo of a aeroplane"]
-#         aeroplane_sub_classes_1 = clipretrieval(aeroplane_sub_classes,["aeroplane"])
-        aeroplane_sub_classes = aeroplane_sub_classes 
-        print("caption number:",len(aeroplane_sub_classes))
-        
-    elif args.classes == "person":
-#         name = choicek
-        names = ['person',"man","woman","child","boy","girl","old man","teenager"]
-    
-        prompts_list = ["photo of a {} is walking",
-                        "photo of a {} is eating",
-                        "photo of a {} is riding motorbike",
-                        "photo of a {} is riding bicycle",
-                        "photo of a {} is riding horse",
-                        "photo of a {} is driving",  
-                        "photo of a {} is play",  
-                       
-                        #sports
-                        "photo of a {} is playing baseball","photo of a {} is playing Basketball", 
-                        "photo of a {} is playing Badminton","photo of a {} is Swimming",
-                        "photo of a {} is playing Bodybuilding","photo of a {} is playing Bowling",
-                        "photo of a {} is dancing","photo of a {} is playing Football",
-                        "photo of a {} is playing Golf","photo of a {} is playing Frisbee",
-                        "photo of a {} is Skiing", "photo of a {} is playing Table Tennis",
-                        "photo of a {} is doing Yoga","photo of a {} is doing Fitness",
-                        "photo of a {} is doing Rugby","photo of a {} is doing Wrestling",
-                        "photo of a {} is doing High jumping","photo of a {} is Cycling",
-                        "photo of a {} is running","photo of a {} is Fishing",
-                        "photo of a {} is doing Judo","photo of a {} is Climbing",
-                        
-                        # scenario
-                        "photo of a {} is walking in the street","photo of a {} is in the road",
-                        "photo of a {} is playing at home","photo of a {} is in the shopping center",
-                        "photo of a {} is in on the mountain","photo of a {} is in on the mountain",
-                        "photo of a {} is crossing a road","photo of a {} is sitting",
-                        "photo of a {} is sitting at home", "photo of a {} is playing at sofa",
-                        "photo of a {} is playing at home","photo of back of a {}",
-                        
-                        
-                        #others  
-                        "photo of a {} is cooking",
-                       "photo of a {}",
-                       "photo of arm of a {}",
-                        "photo of foot of a {}",
-                       "photo of a {} is running"]
-        
-        car_sub_classes = []
-        for name in names:
-            for prompts_line in prompts_list:
-                car_sub_classes.append(prompts_line.format(name))
-        
-        print("prompt number:",len(car_sub_classes))
-        car_sub_classes = clipretrieval(car_sub_classes,coco_category_list_check_person)
-        
-        
-    else:
-        prompts_list = ["Photo of a {}".format(args.classes),
-                   "a {}".format(args.classes),
-                   "{}".format(args.classes)]
-    
     for rand in range(number_per_thread_num):
         g_cpu = torch.Generator().manual_seed(image_cnt)
-
-#         if args.classes not in prompts[0]:
-#             continue
-        
-        if args.classes in sub_classes:
-            prompts = [choice(sub_classes_list)]
-        elif args.classes == "diningtable":
-            prompts = [choice(diningtable_sub_classes)]
-        elif args.classes == "car":
-            prompts = [choice(car_sub_classes)]
-        elif args.classes == "aeroplane":
-            prompts = [choice(aeroplane_sub_classes)]
-        elif args.classes == "person":
-            prompts = [choice(car_sub_classes)]
-        elif args.classes == "bottle":
-            prompts = [choice(bottle_sub_classes)]
-        elif args.classes == "chair":
-            prompts = [choice(chair_sub_classes)]
+        prompts = [prompts_list[rand % len(prompts_list)]]
         print(image_cnt)
         print(prompts)
-        
-        
+
         controller = AttentionStore()
-        image_cnt+=1
-        image, x_t = run(prompts, controller, latent=None,  generator=g_cpu,out_put = os.path.join(image_path,"image_{}_{}.jpg".format(args.classes,image_cnt)),ldm_stable=ldm_stable)
-        save_cross_attention(image[0].copy(),controller, res=32, from_where=("up", "down"),out_put = os.path.join(npy_path,"image_{}_{}".format(args.classes,image_cnt)),image_cnt=image_cnt,class_one=args.classes,prompts=prompts,tokenizer=tokenizer)
-
-
-
+        image_cnt += 1
+        image, x_t = run(prompts, controller, latent=None, generator=g_cpu, out_put=os.path.join(image_path, "image_{}_{}.jpg".format(args.classes, image_cnt)), ldm_stable=ldm_stable)
+        save_cross_attention(image[0].copy(), controller, res=32, from_where=("up", "down"), out_put=os.path.join(npy_path, "image_{}_{}".format(args.classes, image_cnt)), image_cnt=image_cnt, class_one=args.classes, prompts=prompts, tokenizer=tokenizer)
 
     
 if __name__ == '__main__':
-    
     parser = argparse.ArgumentParser()
     parser.add_argument("--classes", default="dog", type=str)
     parser.add_argument("--thread_num", default=8, type=int)
     parser.add_argument("--output", default=None, type=str)
     parser.add_argument("--image_number", default=None, type=str)
     parser.add_argument("--MY_TOKEN", default=None, type=str)
-    
+
     args = parser.parse_args()
-    
-    args.output = os.path.join(args.output, "VOC_Multi_Attention_{}_sub_{}_NoClipRetrieval_sample".format(args.classes,args.image_number))
+
+    args.output = os.path.join(args.output, "VOC_Multi_Attention_{}_sub_{}_NoClipRetrieval_sample".format(args.classes, args.image_number))
     if not os.path.exists(args.output):
         os.makedirs(args.output)
     
-    result_dict = mp.Manager().dict()
+    with open('/home/xiangchao/home/muxinyu/SAMDiffusion/prompt_engineer/voc_output.json', 'r') as f:
+        data = json.load(f)
+    
+    if args.classes not in data:
+        raise ValueError(f"Class {args.classes} not found in JSON data")
+    
+    prompts_list = data[args.classes]
+    total_prompts = len(prompts_list)
+    prompts_per_thread = total_prompts // args.thread_num
+    if total_prompts % args.thread_num != 0:
+        prompts_per_thread += 1
+    
     mp = mp.get_context("spawn")
     processes = []
-#     per_thread_video_num = int(len(coco_category_list)/thread_num)
-
-    print('Start Generation')
     for i in range(args.thread_num):
-
-        p = mp.Process(target=sub_processor, args=(i, args))
+        start_idx = i * prompts_per_thread
+        end_idx = min(start_idx + prompts_per_thread, total_prompts)
+        thread_prompts_list = prompts_list[start_idx:end_idx]
+        p = mp.Process(target=sub_processor, args=(i, args, thread_prompts_list))
         p.start()
         processes.append(p)
 
-
     for p in processes:
         p.join()
-
-    result_dict = dict(result_dict)
-    
 
 
 
