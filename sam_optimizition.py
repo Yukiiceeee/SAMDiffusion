@@ -1,13 +1,12 @@
-import torch
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 from segment_anything import sam_model_registry, SamPredictor
 from segment_anything.utils.onnx import SamOnnxModel
-
 import onnxruntime
-from onnxruntime.quantization import QuantType
-from onnxruntime.quantization.quantize import quantize_dynamic
+import torch
+import warnings
+import os
 
 def show_mask(mask, ax):
     color = np.array([30/255, 144/255, 255/255, 0.6])
@@ -26,14 +25,10 @@ def show_box(box, ax):
     w, h = box[2] - box[0], box[3] - box[1]
     ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='green', facecolor=(0,0,0,0), lw=2))   
 
-checkpoint = "segment-anything/sam_vit_h_4b8939.pth"
+checkpoint = "/home/xiangchao/home/muxinyu/segment-anything/sam_vit_h_4b8939.pth"
 model_type = "vit_h"
 
 sam = sam_model_registry[model_type](checkpoint=checkpoint)
-onnx_model_path = None
-
-import warnings
-
 onnx_model_path = "sam_onnx_example.onnx"
 
 onnx_model = SamOnnxModel(sam, return_single_mask=True)
@@ -73,68 +68,92 @@ with warnings.catch_warnings():
             dynamic_axes=dynamic_axes,
         )    
 
-image = cv2.imread('segment-anything/images/image_aeroplane_200001.jpg')
-image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
 ort_session = onnxruntime.InferenceSession(onnx_model_path)
-sam.to(device='cuda')
+sam.to(device='cuda:3')
 predictor = SamPredictor(sam)
-predictor.set_image(image)
-image_embedding = predictor.get_image_embedding().cpu().numpy()
-image_embedding.shape
 
-data = np.load('image_aeroplane_200001.npy', allow_pickle=True).item()
+image_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/train_image'
+npy_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/npy'
+output_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/sam_output'
 
-first_key = next(iter(data))
-extracted_data = data[first_key]
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
-unique_values = np.unique(extracted_data)
-max_value = unique_values[-1]
-second_max_value = unique_values[-2]
+image_files = sorted([f for f in os.listdir(image_dir) if f.endswith('.jpg')])
+npy_files = sorted([f for f in os.listdir(npy_dir) if f.endswith('.npy')])
 
-max_positions = np.argwhere(extracted_data == max_value)
-
-second_max_positions = np.argwhere(extracted_data == second_max_value)
-
-max_row_indices = max_positions[:, 0]  # 行索引
-max_col_indices = max_positions[:, 1]  # 列索引
-
-second_max_row_indices = second_max_positions[:, 0]  # 行索引
-second_max_col_indices = second_max_positions[:, 1]  # 列索引
-
-
-input_point = np.array([
-    [max_col_indices[0], max_row_indices[0]]
+for image_file, npy_file in zip(image_files, npy_files):
+    image_path = os.path.join(image_dir, image_file)
+    npy_path = os.path.join(npy_dir, npy_file)
     
-])
-input_label = np.array([1]) 
+    image = cv2.imread(image_path)
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+    predictor.set_image(image)
+    image_embedding = predictor.get_image_embedding().cpu().numpy()
+    
+    data = np.load(npy_path, allow_pickle=True).item()
+    
+    for key, value in data.items():
+        if not np.all(value == 0):
+            extracted_data = value
+            break
+    
+    # 归一化数据到 0-255 范围
+    normalized_data = (extracted_data - np.min(extracted_data)) / (np.max(extracted_data) - np.min(extracted_data)) * 255
+    normalized_data = normalized_data.astype(np.uint8)
 
-mask = list(data.values())[0]
-
-# 将 mask 调整为 (1, 1, 256, 256) 的形状
-onnx_mask_input = mask[:256, :256][np.newaxis, np.newaxis, :, :].astype(np.float32)
-
-onnx_coord = np.concatenate([input_point, np.array([[0.0, 0.0]])], axis=0)[None, :, :]
-onnx_label = np.concatenate([input_label, np.array([-1])], axis=0)[None, :].astype(np.float32)
-
-onnx_coord = predictor.transform.apply_coords(onnx_coord, image.shape[:2]).astype(np.float32)
-onnx_has_mask_input = np.ones(1, dtype=np.float32)
-
-ort_inputs = {
-    "image_embeddings": image_embedding,
-    "point_coords": onnx_coord,
-    "point_labels": onnx_label,
-    "mask_input": onnx_mask_input,
-    "has_mask_input": onnx_has_mask_input,
-    "orig_im_size": np.array(image.shape[:2], dtype=np.float32)
-}
-
-masks, _, _ = ort_session.run(None, ort_inputs)
-masks = masks > predictor.model.mask_threshold
-
-plt.figure(figsize=(10,10))
-plt.imshow(image)
-show_mask(masks, plt.gca())
-show_points(input_point, input_label, plt.gca())
-plt.axis('off')
-plt.show() 
+    # 获取所有点的坐标和值
+    points = np.argwhere(normalized_data)
+    values = normalized_data[points[:, 0], points[:, 1]]
+    
+    # 按值排序
+    sorted_indices = np.argsort(values)[::-1]
+    sorted_points = points[sorted_indices]
+    
+    # 颠倒x和y坐标
+    sorted_points = sorted_points[:, ::-1]
+    
+    # 选择前5个点作为前景提示，最后5个点作为背景提示
+    top_5_points = sorted_points[:5]
+    bottom_5_points = sorted_points[-5:]
+    
+    input_point = np.concatenate([top_5_points, bottom_5_points])
+    input_label = np.array([1]*5 + [0]*5)
+    
+    mask = list(data.values())[0]
+    
+    onnx_mask_input = mask[:256, :256][np.newaxis, np.newaxis, :, :].astype(np.float32)
+    
+    onnx_coord = np.concatenate([input_point, np.array([[0.0, 0.0]])], axis=0)[None, :, :]
+    onnx_label = np.concatenate([input_label, np.array([-1])], axis=0)[None, :].astype(np.float32)
+    
+    onnx_coord = predictor.transform.apply_coords(onnx_coord, image.shape[:2]).astype(np.float32)
+    onnx_has_mask_input = np.ones(1, dtype=np.float32)
+    
+    ort_inputs = {
+        "image_embeddings": image_embedding,
+        "point_coords": onnx_coord,
+        "point_labels": onnx_label,
+        "mask_input": onnx_mask_input,
+        "has_mask_input": onnx_has_mask_input,
+        "orig_im_size": np.array(image.shape[:2], dtype=np.float32)
+    }
+    
+    masks, _, _ = ort_session.run(None, ort_inputs)
+    masks = masks > predictor.model.mask_threshold
+    
+    plt.figure(figsize=(10,10))
+    plt.imshow(image)
+    show_mask(masks, plt.gca())
+    show_points(input_point, input_label, plt.gca())
+    plt.axis('off')
+    
+    output_file = os.path.splitext(image_file)[0] + '_mask.png'
+    output_path = os.path.join(output_dir, output_file)
+    plt.savefig(output_path, bbox_inches='tight', pad_inches=0)
+    plt.close()
+    
+    # 输出值最大的点的坐标
+    max_value_point = sorted_points[0]
+    print(f"Maximum value point coordinates: {max_value_point} {image_file}")
