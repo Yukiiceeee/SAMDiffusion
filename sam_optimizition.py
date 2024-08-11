@@ -99,22 +99,17 @@ for image_file, npy_file in zip(image_files, npy_files):
             extracted_data = value
             break
     
-    # 归一化数据到 0-255 范围
     normalized_data = (extracted_data - np.min(extracted_data)) / (np.max(extracted_data) - np.min(extracted_data)) * 255
     normalized_data = normalized_data.astype(np.uint8)
 
-    # 获取所有点的坐标和值
     points = np.argwhere(normalized_data)
     values = normalized_data[points[:, 0], points[:, 1]]
     
-    # 按值排序
     sorted_indices = np.argsort(values)[::-1]
     sorted_points = points[sorted_indices]
     
-    # 颠倒x和y坐标
     sorted_points = sorted_points[:, ::-1]
     
-    # 选择前5个点作为前景提示，最后5个点作为背景提示
     top_5_points = sorted_points[:5]
     bottom_5_points = sorted_points[-5:]
     
@@ -143,17 +138,19 @@ for image_file, npy_file in zip(image_files, npy_files):
     masks, _, _ = ort_session.run(None, ort_inputs)
     masks = masks > predictor.model.mask_threshold
     
-    plt.figure(figsize=(10,10))
-    plt.imshow(image)
-    show_mask(masks, plt.gca())
-    show_points(input_point, input_label, plt.gca())
-    plt.axis('off')
+    # 确保 masks 是一个二维数组
+    masks = masks[0][0]
+    print(masks)
+    # 创建一个全黑的背景图像
+    mask_image = np.zeros((image.shape[0], image.shape[1], 3), dtype=np.uint8)
+    
+    # 将掩码应用到背景图像上
+    color = np.array([30, 144, 255], dtype=np.uint8)
+    mask_image[masks] = color
     
     output_file = os.path.splitext(image_file)[0] + '_mask.png'
     output_path = os.path.join(output_dir, output_file)
-    plt.savefig(output_path, bbox_inches='tight', pad_inches=0)
-    plt.close()
+    cv2.imwrite(output_path, cv2.cvtColor(mask_image, cv2.COLOR_RGB2BGR))
     
-    # 输出值最大的点的坐标
     max_value_point = sorted_points[0]
     print(f"Maximum value point coordinates: {max_value_point} {image_file}")
