@@ -519,6 +519,7 @@ def sub_processor(pid, args, prompts_list):
         g_cpu = torch.Generator().manual_seed(image_cnt)
         prompts = [prompts_list[rand % len(prompts_list)]]
         print(image_cnt)
+        prompts[0] += args.classes
         print(prompts)
 
         controller = AttentionStore()
@@ -541,13 +542,15 @@ if __name__ == '__main__':
     if not os.path.exists(args.output):
         os.makedirs(args.output)
     
-    with open('/home/xiangchao/home/muxinyu/SAMDiffusion/prompt_engineer/voc_output.json', 'r') as f:
+    with open('/home/xiangchao/home/muxinyu/SAMDiffusion/prompt_engineer/cat_sentences.json', 'r') as f:
         data = json.load(f)
     
     if args.classes not in data:
         raise ValueError(f"Class {args.classes} not found in JSON data")
     
     prompts_list = data[args.classes]
+    # for prompt in prompts_list:
+    #     prompt += args.classes
     total_prompts = len(prompts_list)
     prompts_per_thread = total_prompts // args.thread_num
     if total_prompts % args.thread_num != 0:

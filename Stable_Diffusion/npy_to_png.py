@@ -65,6 +65,6 @@ def process_all_npy_files(input_dir, output_dir):
             npy_file = os.path.join(input_dir, file_name)
             npy_to_png(npy_file, output_dir,img_cnt,file_name)
 
-input_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/npy'
-output_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/mask'
+input_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_250_NoClipRetrieval/npy'
+output_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_250_NoClipRetrieval/mask'
 process_all_npy_files(input_dir, output_dir)

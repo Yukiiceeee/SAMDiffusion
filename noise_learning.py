@@ -23,7 +23,7 @@ def calculate_iou(mask1, mask2):
     
     # 计算IoU
     iou = intersection_area / union_area if union_area != 0 else 0
-    
+    print(iou)
     return iou
 
 def process_masks(ground_truth_dir, noise_label_dir):
@@ -51,7 +51,11 @@ def process_masks(ground_truth_dir, noise_label_dir):
             
             mask_truth = cv2.imread(gt_path, cv2.IMREAD_GRAYSCALE)
             mask_noise = cv2.imread(nl_path, cv2.IMREAD_GRAYSCALE)
-            
+            # height,width = mask_noise.shape
+            # for y in range(height):  # 遍历每一行
+            #     for x in range(width):  # 遍历每一列
+            #         pixel_value = mask_noise[y, x]  # 访问像素值
+            #         print(f"Pixel at ({y}, {x}): {pixel_value}")
             if mask_truth is None or mask_noise is None:
                 print(f"Warning: Failed to read mask images for {gt_filename}")
                 continue
@@ -60,7 +64,7 @@ def process_masks(ground_truth_dir, noise_label_dir):
                 for j in range(mask_truth.shape[1]):
                     value = mask_truth[i, j]
                     if value >= 10 and value <= 30:
-                        mask_truth[i, j] = 122
+                        mask_truth[i, j] = 127
                     else:
                         mask_truth[i, j] = 0
             
@@ -118,7 +122,7 @@ def save_top_images(top_images, ground_truth_dir, noise_label_dir, output_image_
 
 if __name__ == "__main__":
     ground_truth_dir = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/ground_truth"
-    noise_label_dir = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/sam_output"
+    noise_label_dir = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/repair_final_output"
     output_image_dir = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/top_images"
     output_mask_dir = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/top_masks"
     true_img = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/train_image"

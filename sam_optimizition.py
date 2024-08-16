@@ -72,9 +72,9 @@ ort_session = onnxruntime.InferenceSession(onnx_model_path)
 sam.to(device='cuda:3')
 predictor = SamPredictor(sam)
 
-image_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/train_image'
-npy_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/npy'
-output_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/sam_output'
+image_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_250_NoClipRetrieval/train_image'
+npy_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_250_NoClipRetrieval/npy'
+output_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_250_NoClipRetrieval/sam_output'
 
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
@@ -110,11 +110,14 @@ for image_file, npy_file in zip(image_files, npy_files):
     
     sorted_points = sorted_points[:, ::-1]
     
-    top_5_points = sorted_points[:5]
-    bottom_5_points = sorted_points[-5:]
+    # 选取正点提示
+    positive_points = sorted_points[::20][:5]
     
-    input_point = np.concatenate([top_5_points, bottom_5_points])
-    input_label = np.array([1]*5 + [0]*5)
+    # 选取负点提示
+    negative_points = sorted_points[::-20][:5]
+    
+    input_point = np.concatenate([positive_points, negative_points])
+    input_label = np.array([1]*len(positive_points) + [0]*len(negative_points))
     
     mask = list(data.values())[0]
     
