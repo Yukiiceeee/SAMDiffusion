@@ -343,6 +343,7 @@ def save_cross_attention(orignial_image,attention_store: AttentionStore, res: in
     orignial_image = orignial_image.copy()
     show = True
     tokens = tokenizer.encode(prompts[select])
+    print(prompts[select])
     decoder = tokenizer.decode
     
     # "up", "down"
@@ -542,7 +543,7 @@ if __name__ == '__main__':
     if not os.path.exists(args.output):
         os.makedirs(args.output)
     
-    with open('/home/xiangchao/home/muxinyu/SAMDiffusion/prompt_engineer/cat_sentences.json', 'r') as f:
+    with open('/home/zhuyifan/Cyan_A40/SAMDiffusion/prompt_engineer/cat_sentences.json', 'r') as f:
         data = json.load(f)
     
     if args.classes not in data:

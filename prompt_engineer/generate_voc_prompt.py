@@ -8,8 +8,8 @@ from langchain.chat_models import ChatOpenAI
 
 # 设置API密钥
 os.environ["SERPER_API_KEY"] = "494e8d3a94e8cfab65ef692cf445fc1cce8149a1"
-os.environ['OPENAI_API_KEY'] = "fk227782-dvgh0rCcp2ZhANj6B1dg18ACjGG82JLm"
-os.environ['OPENAI_API_BASE'] = "https://openai.api2d.net/v1"
+os.environ['OPENAI_API_KEY'] = "sk-ae927ed128bd4e7e8255be1cd5ab395e"
+os.environ['OPENAI_API_BASE'] = "https://api.deepseek.com"
 
 # 提示词模版
 prompt_sub_category = "Category: {}\n\nPlease list 10 common subcategories that belong to this category. You may use online search engines such as Google to ensure accuracy and comprehensiveness.\n\nOutput format:\n- Subcategory_Name\n\nFor example:\nInput: Category: cat\nOutput:\n- Siamese\n- Persian\n- Maine Coon\n- Bengal\n- Sphynx\n- Ragdoll\n- British Shorthair\n- Abyssinian\n- Scottish Fold\n- Russian Blue"
@@ -18,9 +18,9 @@ prompt_sub_sentence = "Subcategory: {}\n\nPlease create 10 realistic and detaile
 # 加载模型和指定工具
 llm = ChatOpenAI(
     openai_api_key=os.environ["OPENAI_API_KEY"],
-    base_url='https://openai.api2d.net/v1',
-    model='gpt-3.5-turbo',
-    temperature=0.7,
+    base_url='https://api.deepseek.com',
+    model='deepseek-chat',
+    temperature=0.5,
 )
 
 # 加载工具
