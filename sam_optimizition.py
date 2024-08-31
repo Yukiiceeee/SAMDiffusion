@@ -25,7 +25,7 @@ def show_box(box, ax):
     w, h = box[2] - box[0], box[3] - box[1]
     ax.add_patch(plt.Rectangle((x0, y0), w, h, edgecolor='green', facecolor=(0,0,0,0), lw=2))   
 
-checkpoint = "/home/xiangchao/home/muxinyu/segment-anything/sam_vit_h_4b8939.pth"
+checkpoint = "/home/zhuyifan/Cyan_A40/segment-anything/sam_vit_h_4b8939.pth"
 model_type = "vit_h"
 
 sam = sam_model_registry[model_type](checkpoint=checkpoint)
@@ -69,12 +69,12 @@ with warnings.catch_warnings():
         )    
 
 ort_session = onnxruntime.InferenceSession(onnx_model_path)
-sam.to(device='cuda:3')
+sam.to(device='cuda:0')
 predictor = SamPredictor(sam)
 
-image_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_250_NoClipRetrieval/train_image'
-npy_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_250_NoClipRetrieval/npy'
-output_dir = '/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_250_NoClipRetrieval/sam_output'
+image_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_boat_sub_4000_NoClipRetrieval_sample/train_image'
+npy_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_boat_sub_4000_NoClipRetrieval_sample/npy'
+output_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_boat_sub_4000_NoClipRetrieval_sample/sam_output'
 
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)

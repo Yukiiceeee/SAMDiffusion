@@ -43,6 +43,7 @@ def process_masks(ground_truth_dir, noise_label_dir):
         if gt_filename.endswith('.jpg') or gt_filename.endswith('.png'):
             gt_path = os.path.join(ground_truth_dir, gt_filename)
             nl_filename = gt_filename.replace('.jpg', '_mask.png')
+            # nl_filename = gt_filename.rsplit('.', 1)[0] + '_mask.png'
             nl_path = os.path.join(noise_label_dir, nl_filename)
             
             if not os.path.exists(nl_path):
@@ -60,20 +61,23 @@ def process_masks(ground_truth_dir, noise_label_dir):
                 print(f"Warning: Failed to read mask images for {gt_filename}")
                 continue
             
-            for i in range(mask_truth.shape[0]):
-                for j in range(mask_truth.shape[1]):
-                    value = mask_truth[i, j]
-                    if value >= 10 and value <= 30:
-                        mask_truth[i, j] = 127
-                    else:
-                        mask_truth[i, j] = 0
+            # for i in range(mask_truth.shape[0]):
+            #     for j in range(mask_truth.shape[1]):
+            #         value = mask_truth[i, j]
+            #         print(value)
+            #         if value >= 10 and value <= 30:
+            #             mask_truth[i, j] = 127
+            #         else:
+            #             mask_truth[i, j] = 0
+            mask_truth[mask_truth != 0] = 255
+            mask_noise[mask_noise != 0] = 255
             
             iou = calculate_iou(mask1=mask_truth, mask2=mask_noise)
             iou_dict[gt_filename] = iou
     
     return iou_dict
 
-def get_top_images(iou_dict, top_n=500):
+def get_top_images(iou_dict, top_n=2000):
     """
     根据IoU值的降序顺序，获取排名前N的图像名称。
     
@@ -105,14 +109,18 @@ def save_top_images(top_images, ground_truth_dir, noise_label_dir, output_image_
         os.makedirs(output_mask_dir)
     
     for filename in top_images:
-        gt_path = os.path.join(ground_truth_dir, filename)
+        print(f"ground truth dir:{ground_truth_dir}")
+        print(f"filename:{filename}")
+        original_filename = filename.replace('_mask.png', '.jpg')
+        gt_path = os.path.join(ground_truth_dir, original_filename)
         nl_filename = filename.replace('.jpg', '_mask.png')
         nl_path = os.path.join(noise_label_dir, nl_filename)
         
         output_image_path = os.path.join(output_image_dir, filename)
         output_mask_path = os.path.join(output_mask_dir, nl_filename)
-        
+        print(f"Reading image from: {gt_path}")
         image = cv2.imread(gt_path)
+        print(f"Reading mask from: {nl_path}")
         mask = cv2.imread(nl_path, cv2.IMREAD_GRAYSCALE)
         
         if image is not None:
@@ -121,14 +129,14 @@ def save_top_images(top_images, ground_truth_dir, noise_label_dir, output_image_
             cv2.imwrite(output_mask_path, mask)
 
 if __name__ == "__main__":
-    ground_truth_dir = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/ground_truth"
-    noise_label_dir = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/repair_final_output"
-    output_image_dir = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/top_images"
-    output_mask_dir = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/top_masks"
-    true_img = "/data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/train_image"
+    ground_truth_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/ground_truth"
+    noise_label_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/repair_final_output"
+    output_image_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/top_images"
+    output_mask_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/top_masks"
+    true_img = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/train_image"
     iou_dict = process_masks(ground_truth_dir, noise_label_dir)
-    top_images = get_top_images(iou_dict, top_n=500)
+    top_images = get_top_images(iou_dict, top_n=2000)
     
     save_top_images(top_images, true_img, noise_label_dir, output_image_dir, output_mask_dir)
     
-    print(f"Top 500 images based on IoU: {top_images}")
+    print(f"Top 2000 images based on IoU: {top_images}")
