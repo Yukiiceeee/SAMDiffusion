@@ -5,8 +5,8 @@ import matplotlib.pyplot as plt
 import os
 
 # 定义输入和输出目录
-input_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_boat_sub_4000_NoClipRetrieval_sample/sam_output'
-output_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_boat_sub_4000_NoClipRetrieval_sample/repair_output'
+input_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_tvmonitor_sub_4000_NoClipRetrieval_sample/sam_output'
+output_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_tvmonitor_sub_4000_NoClipRetrieval_sample/repair_output'
 
 # 确保输出目录存在
 if not os.path.exists(output_dir):

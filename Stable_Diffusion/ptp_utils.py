@@ -69,6 +69,7 @@ def view_images(images, num_rows=1, offset_ratio=0.02,out_put="./test_1.jpg"):
 
     
 def diffusion_step(model, controller, latents, context, t, guidance_scale, low_resource=False):
+    # print("diffusion_step")
     if low_resource:
         noise_pred_uncond = model.unet(latents, t, encoder_hidden_states=context[0])["sample"]
         noise_prediction_text = model.unet(latents, t, encoder_hidden_states=context[1])["sample"]
@@ -173,7 +174,7 @@ def text2image_ldm_stable(
     model.scheduler.set_timesteps(num_inference_steps)
     for t in tqdm(model.scheduler.timesteps):
         latents = diffusion_step(model, controller, latents, context, t, guidance_scale, low_resource)
-    
+
     image = latent2image(model.vae, latents)
   
     return image, latent
@@ -228,7 +229,8 @@ def register_attention_control(model, controller):
 
             # attention, what we cannot get enough of
             attn = sim.softmax(dim=-1)
-            attn = controller(attn, is_cross, place_in_unet)
+            attn = controller(attn, is_cross, place_in_unet) # 每一步注意力分数存储
+            # print("attn ")
             out = torch.einsum("b i j, b j d -> b i d", attn, v)
             out = reshape_batch_dim_to_heads(self,out)
             return to_out(out)

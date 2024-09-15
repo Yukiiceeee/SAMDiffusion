@@ -263,17 +263,17 @@ class AttentionStore(AttentionControl):
         self.attention_store = {}
 
 
-def get_equalizer(text: str, word_select: Union[int, Tuple[int, ...]], values: Union[List[float],
-                  Tuple[float, ...]],tokenizer=None):
-    if type(word_select) is int or type(word_select) is str:
-        word_select = (word_select,)
-    equalizer = torch.ones(len(values), 77)
-    values = torch.tensor(values, dtype=torch.float32)
-#     print(values)
-    for word in word_select:
-        inds = ptp_utils.get_word_inds(text, word, tokenizer)
-        equalizer[:, inds] = values
-    return equalizer
+# def get_equalizer(text: str, word_select: Union[int, Tuple[int, ...]], values: Union[List[float],
+#                   Tuple[float, ...]],tokenizer=None):
+#     if type(word_select) is int or type(word_select) is str:
+#         word_select = (word_select,)
+#     equalizer = torch.ones(len(values), 77)
+#     values = torch.tensor(values, dtype=torch.float32)
+# #     print(values)
+#     for word in word_select:
+#         inds = ptp_utils.get_word_inds(text, word, tokenizer)
+#         equalizer[:, inds] = values
+#     return equalizer
 
 
 
@@ -292,48 +292,48 @@ def aggregate_attention(attention_store: AttentionStore, res: int, from_where: L
     return out.cpu()
 
 
-def mask_image(image, mask_2d, rgb=None, valid = False):
-    h, w = mask_2d.shape
+# def mask_image(image, mask_2d, rgb=None, valid = False):
+#     h, w = mask_2d.shape
 
-    mask_3d_color = np.zeros((h, w, 3), dtype="uint8")
+#     mask_3d_color = np.zeros((h, w, 3), dtype="uint8")
     
         
-    image.astype("uint8")
-    mask = (mask_2d!=0).astype(bool)
-    if rgb is None:
-        rgb = np.random.randint(0, 255, (1, 3), dtype=np.uint8)
+#     image.astype("uint8")
+#     mask = (mask_2d!=0).astype(bool)
+#     if rgb is None:
+#         rgb = np.random.randint(0, 255, (1, 3), dtype=np.uint8)
         
-    mask_3d_color[mask_2d[:, :] == 1] = rgb
-    image[mask] = image[mask] * 0.2 + mask_3d_color[mask] * 0.8
+#     mask_3d_color[mask_2d[:, :] == 1] = rgb
+#     image[mask] = image[mask] * 0.2 + mask_3d_color[mask] * 0.8
     
-    if valid:
-        mask_3d_color[mask_2d[:, :] == 1] = [[0,0,0]]
-        kernel = np.ones((5,5),np.uint8)  
-        mask_2d = cv2.dilate(mask_2d,kernel,iterations = 4)
-        mask = (mask_2d!=0).astype(bool)
-        image[mask] = image[mask] * 0 + mask_3d_color[mask] * 1
-        return image,rgb
+#     if valid:
+#         mask_3d_color[mask_2d[:, :] == 1] = [[0,0,0]]
+#         kernel = np.ones((5,5),np.uint8)  
+#         mask_2d = cv2.dilate(mask_2d,kernel,iterations = 4)
+#         mask = (mask_2d!=0).astype(bool)
+#         image[mask] = image[mask] * 0 + mask_3d_color[mask] * 1
+#         return image,rgb
         
-    return image,rgb
+#     return image,rgb
 
-def get_findContours(mask):
-    mask_instance = (mask>0.5 * 1).astype(np.uint8) 
-    ontours, hierarchy = cv2.findContours(mask_instance.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
+# def get_findContours(mask):
+#     mask_instance = (mask>0.5 * 1).astype(np.uint8) 
+#     ontours, hierarchy = cv2.findContours(mask_instance.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     
-    min_area = 0
-    polygon_ins = []
-    x,y,w,h = 0,0,0,0
+#     min_area = 0
+#     polygon_ins = []
+#     x,y,w,h = 0,0,0,0
     
-    image_h, image_w = mask.shape[0:2]
-    gt_kernel = np.zeros((image_h,image_w), dtype='uint8')
-    for cnt in ontours:
-        x_ins_t, y_ins_t, w_ins_t, h_ins_t = cv2.boundingRect(cnt)
+#     image_h, image_w = mask.shape[0:2]
+#     gt_kernel = np.zeros((image_h,image_w), dtype='uint8')
+#     for cnt in ontours:
+#         x_ins_t, y_ins_t, w_ins_t, h_ins_t = cv2.boundingRect(cnt)
 
-        if w_ins_t*h_ins_t<250:
-            continue
-        cv2.fillPoly(gt_kernel, [cnt], 1)
+#         if w_ins_t*h_ins_t<250:
+#             continue
+#         cv2.fillPoly(gt_kernel, [cnt], 1)
 
-    return gt_kernel
+#     return gt_kernel
                         
 def save_cross_attention(orignial_image,attention_store: AttentionStore, res: int, from_where: List[str], select: int = 0,out_put="./test_1.jpg",image_cnt=0,class_one=None,prompts=None , tokenizer=None,mask_diff=None):
     
@@ -343,7 +343,7 @@ def save_cross_attention(orignial_image,attention_store: AttentionStore, res: in
     orignial_image = orignial_image.copy()
     show = True
     tokens = tokenizer.encode(prompts[select])
-    print(prompts[select])
+    # print(prompts[select])
     decoder = tokenizer.decode
     
     # "up", "down"
@@ -371,6 +371,7 @@ def save_cross_attention(orignial_image,attention_store: AttentionStore, res: in
             
             category_list_check = VOC_category_list_check[class_one]
             if class_current not in category_list_check:
+                # print(111)
                 continue
             
             image_8 = attention_maps_8s[:, :, i]
@@ -418,20 +419,20 @@ def save_cross_attention(orignial_image,attention_store: AttentionStore, res: in
 
     
 
-def show_self_attention_comp(attention_store: AttentionStore, res: int, from_where: List[str],
-                        max_com=10, select: int = 0):
-    attention_maps = aggregate_attention(attention_store, res, from_where, False, select).numpy().reshape((res ** 2, res ** 2))
-    u, s, vh = np.linalg.svd(attention_maps - np.mean(attention_maps, axis=1, keepdims=True))
-    images = []
-    for i in range(max_com):
-        image = vh[i].reshape(res, res)
-        image = image - image.min()
-        image = 255 * image / image.max()
-        image = np.repeat(np.expand_dims(image, axis=2), 3, axis=2).astype(np.uint8)
-        image = Image.fromarray(image).resize((256, 256))
-        image = np.array(image)
-        images.append(image)
-    ptp_utils.view_images(np.concatenate(images, axis=1))
+# def show_self_attention_comp(attention_store: AttentionStore, res: int, from_where: List[str],
+#                         max_com=10, select: int = 0):
+#     attention_maps = aggregate_attention(attention_store, res, from_where, False, select).numpy().reshape((res ** 2, res ** 2))
+#     u, s, vh = np.linalg.svd(attention_maps - np.mean(attention_maps, axis=1, keepdims=True))
+#     images = []
+#     for i in range(max_com):
+#         image = vh[i].reshape(res, res)
+#         image = image - image.min()
+#         image = 255 * image / image.max()
+#         image = np.repeat(np.expand_dims(image, axis=2), 3, axis=2).astype(np.uint8)
+#         image = Image.fromarray(image).resize((256, 256))
+#         image = np.array(image)
+#         images.append(image)
+#     ptp_utils.view_images(np.concatenate(images, axis=1))
     
     
 def run(prompts, controller, latent=None, generator=None,out_put = "",ldm_stable=None):
@@ -441,56 +442,6 @@ def run(prompts, controller, latent=None, generator=None,out_put = "",ldm_stable
     ptp_utils.view_images(images_here,out_put = out_put)
     return images_here, x_t
 
-
-# def clipretrieval(text,check):
-#     sensitive_word = ["vector","stock","3d","-3d","-","blur","Vector","blurred","shot","close-up","Headlight","Stock","headlights","Defocused","Close-up","3D","cartoon","interior","internal"] 
-#     prompts = []
-#     for prompt in tqdm(text):
-#         try:
-# #             ClipClient(url="https://knn.laion.ai/knn-service", indice_name="laion5B-L-14")
-#             client = ClipClient(
-#                 url="https://knn.laion.ai/knn-service",
-#                 indice_name="laion5B-L-14",
-#                 aesthetic_score=9,
-#                 aesthetic_weight=0.5,
-#                 modality=Modality.IMAGE,
-#                 num_images=3000,
-#             )
-#             results = client.query(text=prompt)
-#         except:
-#             client = ClipClient(
-#                 url="https://knn.laion.ai/knn-service",
-#                 indice_name="laion5B-L-14",
-#                 aesthetic_score=9,
-#                 aesthetic_weight=0.5,
-#                 modality=Modality.IMAGE,
-#                 num_images=1000,
-#             )
-#             results = client.query(text=prompt)
-            
-#         for i,line in enumerate(results):
-#             caption = line["caption"]
-#             caption_split = caption.split(" ")
-#             continue_flag = True
-            
-#             for chec in check:
-#                 sen_flag = True
-#                 for c in sensitive_word:
-#                     if c in caption_split:
-#                         sen_flag = False
-
-#                 if chec in caption_split[:5] and sen_flag:
-#                     continue_flag=False
-                    
-#             if continue_flag:
-#                 continue
-                
-#             if len(caption_split)>50:
-#                 continue
-# #             if ""
-#             prompts.append("Photo of "+caption)
-    
-#     return prompts
 
 def sub_processor(pid, args, prompts_list):
     torch.cuda.set_device(pid)

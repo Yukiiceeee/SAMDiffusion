@@ -129,11 +129,11 @@ def save_top_images(top_images, ground_truth_dir, noise_label_dir, output_image_
             cv2.imwrite(output_mask_path, mask)
 
 if __name__ == "__main__":
-    ground_truth_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/ground_truth"
-    noise_label_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/repair_final_output"
-    output_image_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/top_images"
-    output_mask_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/top_masks"
-    true_img = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_bird_sub_4000_NoClipRetrieval_sample/train_image"
+    ground_truth_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_tvmonitor_sub_4000_NoClipRetrieval_sample/ground_truth"
+    noise_label_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_tvmonitor_sub_4000_NoClipRetrieval_sample/repair_final_output"
+    output_image_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_tvmonitor_sub_4000_NoClipRetrieval_sample/top_images"
+    output_mask_dir = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_tvmonitor_sub_4000_NoClipRetrieval_sample/top_masks"
+    true_img = "/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_tvmonitor_sub_4000_NoClipRetrieval_sample/train_image"
     iou_dict = process_masks(ground_truth_dir, noise_label_dir)
     top_images = get_top_images(iou_dict, top_n=2000)
     

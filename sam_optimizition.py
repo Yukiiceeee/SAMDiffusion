@@ -72,9 +72,9 @@ ort_session = onnxruntime.InferenceSession(onnx_model_path)
 sam.to(device='cuda:0')
 predictor = SamPredictor(sam)
 
-image_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_boat_sub_4000_NoClipRetrieval_sample/train_image'
-npy_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_boat_sub_4000_NoClipRetrieval_sample/npy'
-output_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_boat_sub_4000_NoClipRetrieval_sample/sam_output'
+image_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_sofa_sub_4000_NoClipRetrieval_sample/train_image'
+npy_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_sofa_sub_4000_NoClipRetrieval_sample/npy'
+output_dir = '/home/zhuyifan/Cyan_A40/sam_data/VOC_Multi_Attention_sofa_sub_4000_NoClipRetrieval_sample/sam_output'
 
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
