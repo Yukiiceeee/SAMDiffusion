@@ -15,7 +15,12 @@ do
 
     # Run the Python augmentation script
     echo "Processing category: ${CATEGORY}"
-    python3 Augmentation_Gaussian_VOC.py --input_root "$INPUT_ROOT" --out_root "$OUTPUT_ROOT"
+    python3 Augmentation_Gaussian_VOC.py --n_image 100 --input_root "$INPUT_ROOT" --out_root "$OUTPUT_ROOT"
+    python3 Augmentation_occlusion_VOC.py --n_image 500 --input_root "$INPUT_ROOT" --out_root "$OUTPUT_ROOT"
+    python3 Augmentation_Transformation_VOC.py --n_image 50 --input_root "$INPUT_ROOT" --out_root "$OUTPUT_ROOT"
+    python3 Augmentation_Distortion_VOC.py --n_image 50 --input_root "$INPUT_ROOT" --out_root "$OUTPUT_ROOT"
+    # Splicing default generate 300 images
+    python3 Augmentation_splicing_VOC.py --input_root "$INPUT_ROOT" --out_root "$OUTPUT_ROOT"
 done
 
 echo "All categories processed."

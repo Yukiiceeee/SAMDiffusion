@@ -108,6 +108,12 @@ def main():
         default=1,
         help="the number of threads",
     )
+    parser.add_argument(
+        "--n_image",
+        type=int,
+        default=100,
+        help="Number of images to process",
+    )
     opt = parser.parse_args()
 
     os.makedirs(f"{opt.out_root}/Image/", exist_ok=True)
@@ -125,7 +131,7 @@ def main():
 
     print('Start Generation')
     for i in range(opt.thread_num):
-        p = context.Process(target=augment_with_optical_distortion, args=(opt.input_root, opt.out_root, image_list, 100, i * 100))
+        p = context.Process(target=augment_with_optical_distortion, args=(opt.input_root, opt.out_root, image_list, opt.n_image, i * opt.n_image))
         p.start()
         processes.append(p)
 

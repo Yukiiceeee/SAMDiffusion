@@ -3,7 +3,7 @@ import cv2
 
 # 定义源文件夹路径
 source_folder = "/home/zhuyifan/Cyan_A40/mmsegmentation/data/sam_data/SegmentationClass"  # 请替换为您的实际路径
-output_folder = "/home/zhuyifan/Cyan_A40/mmsegmentation/data/sam_data/SegmentationClassr"  # 如果需要保存到其他文件夹，请修改为目标文件夹路径
+output_folder = "/home/zhuyifan/Cyan_A40/mmsegmentation/data/sam_data/SegmentationClass"  # 如果需要保存到其他文件夹，请修改为目标文件夹路径
 
 # 确保输出目录存在
 os.makedirs(output_folder, exist_ok=True)
