@@ -1,1 +1,0 @@
-CUDA_VISIBLE_DEVICES=0 python3 /home/zhuyifan/Cyan_A40/SAMDiffusion/Stable_Diffusion/test_SD.py --classes cat --thread_num 1 --output /home/zhuyifan/Cyan_A40/sam_data --image_number 1 --MY_TOKEN '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' 

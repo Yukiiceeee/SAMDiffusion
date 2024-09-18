@@ -4,38 +4,35 @@ import os
 
 def calculate_iou(mask1, mask2):
     """
-    计算两个掩码的IoU。
-    
-    参数:
-    mask1: 第一个掩码，形状为 (H, W) 的 numpy 数组，其中 H 和 W 分别是图像的高度和宽度。
-    mask2: 第二个掩码，形状为 (H, W) 的 numpy 数组。
-    
-    返回:
-    iou: 两个掩码的IoU值。
+    Calculate the IoU of two masks.
+        
+    Parameters:
+    Mask1: The first mask is a numpy array with the shape of (H, W), where H and W are the height and width of the image, respectively.
+    Mask2: The second mask is a numpy array with the shape of (H, W).
+        
+    return:
+    IoU: The IoU value of two masks.
     """
-    # 计算交集
     intersection = np.logical_and(mask1, mask2)
     intersection_area = np.sum(intersection)
     
-    # 计算并集
     union = np.logical_or(mask1, mask2)
     union_area = np.sum(union)
     
-    # 计算IoU
     iou = intersection_area / union_area if union_area != 0 else 0
     print(iou)
     return iou
 
 def process_masks(ground_truth_dir, noise_label_dir):
     """
-    处理两个目录中的掩码图像，计算每对掩码的IoU，并生成一个字典存储图像名称和IoU值。
-    
-    参数:
-    ground_truth_dir: 存储真实掩码图像的目录。
-    noise_label_dir: 存储噪声掩码图像的目录。
-    
-    返回:
-    iou_dict: 包含图像名称和对应IoU值的字典。
+    Process mask images in two directories, calculate the IoU of each pair of masks, and generate a dictionary to store image names and IoU values.
+        
+    Parameters:
+    Ground_truth.dir: The directory where the real mask image is stored.
+    Noise_label-dir: A directory for storing noise mask images.
+        
+    return:
+    Iou_ict: A dictionary containing image names and corresponding IoU values.
     """
     iou_dict = {}
     
@@ -79,14 +76,14 @@ def process_masks(ground_truth_dir, noise_label_dir):
 
 def get_top_images(iou_dict, top_n=2000):
     """
-    根据IoU值的降序顺序，获取排名前N的图像名称。
-    
-    参数:
-    iou_dict: 包含图像名称和对应IoU值的字典。
-    top_n: 需要获取的图像数量。
-    
-    返回:
-    top_images: 包含排名前N的图像名称的数组。
+    Obtain the top N image names based on the descending order of IoU values.
+        
+    Parameters:
+    Iou_ict: A dictionary containing image names and corresponding IoU values.
+    Top_n: The number of images that need to be obtained.
+        
+    return:
+    Top_images: An array containing the names of the top N ranked images.
     """
     sorted_iou = sorted(iou_dict.items(), key=lambda item: item[1], reverse=True)
     top_images = [item[0] for item in sorted_iou[:top_n]]
@@ -94,14 +91,14 @@ def get_top_images(iou_dict, top_n=2000):
 
 def save_top_images(top_images, ground_truth_dir, noise_label_dir, output_image_dir, output_mask_dir):
     """
-    将排名前N的图像及其对应的掩码保存到指定的目录中。
-    
-    参数:
-    top_images: 包含排名前N的图像名称的数组。
-    ground_truth_dir: 存储真实掩码图像的目录。
-    noise_label_dir: 存储噪声掩码图像的目录。
-    output_image_dir: 保存图像的输出目录。
-    output_mask_dir: 保存掩码的输出目录。
+    Save the top N images and their corresponding masks to the specified directory.
+        
+    Parameters:
+    Top_images: An array containing the names of the top N ranked images.
+    Ground_truth.dir: The directory where the real mask image is stored.
+    Noise_label-dir: A directory for storing noise mask images.
+    Output_image_dir: Save the output directory of the image.
+    Output_mask-dir: Save the output directory of the mask.
     """
     if not os.path.exists(output_image_dir):
         os.makedirs(output_image_dir)

@@ -7,31 +7,30 @@ from mmengine.model import revert_sync_batchnorm
 
 from mmseg.apis import inference_model, init_model
 color_map = np.array([
-    [0, 0, 0],        # 背景
-    [128, 0, 0],      # 飞机
-    [0, 128, 0],      # 自行车
-    [128, 128, 0],    # 鸟
-    [0, 0, 128],      # 船
-    [128, 0, 128],    # 瓶子
-    [0, 128, 128],    # 公车
-    [128, 128, 128],  # 汽车
-    [64, 0, 0],       # 猫
-    [192, 0, 0],      # 椅子
-    [64, 128, 0],     # 牛
-    [192, 128, 0],    # 餐桌
-    [64, 0, 128],     # 狗
-    [192, 0, 128],    # 马
-    [64, 128, 128],   # 摩托车
-    [192, 128, 128],  # 人
-    [0, 64, 0],       # 植物
-    [128, 64, 0],     # 羊
-    [0, 192, 0],      # 沙发
-    [128, 192, 0],    # 火车
-    [0, 64, 128],     # 显示器
+    [0, 0, 0],     
+    [128, 0, 0],   
+    [0, 128, 0],   
+    [128, 128, 0], 
+    [0, 0, 128],   
+    [128, 0, 128], 
+    [0, 128, 128], 
+    [128, 128, 128],
+    [64, 0, 0],    
+    [192, 0, 0],   
+    [64, 128, 0],  
+    [192, 128, 0], 
+    [64, 0, 128],  
+    [192, 0, 128], 
+    [64, 128, 128],
+    [192, 128, 128],
+    [0, 64, 0],    
+    [128, 64, 0],  
+    [0, 192, 0],   
+    [128, 192, 0], 
+    [0, 64, 128],  
 ], dtype=np.uint8)
 
 def label_to_color_image(label, color_map):
-    """将类别标签映射到颜色图像"""
     if label.ndim != 2:
         raise ValueError('Expect 2-D input label')
 
@@ -53,32 +52,25 @@ def main():
     parser.add_argument('--device', default='cuda:0', help='Device used for inference')
     args = parser.parse_args()
 
-    # 初始化模型
     model = init_model(args.config, args.checkpoint, device=args.device)
     if args.device == 'cpu':
         model = revert_sync_batchnorm(model)
 
-    # 确保输出目录存在
     if args.out_dir:
         Path(args.out_dir).mkdir(parents=True, exist_ok=True)
 
-    # 处理所有图像
     img_dir = Path(args.img_dir)
     for img_path in img_dir.glob('*.jpg'):
-        # 推理
         result = inference_model(model, str(img_path))
         seg_mask = result.pred_sem_seg.data[0].cpu().numpy()
 
-        # 调试：打印分割结果的统计信息
         print(f'Image: {img_path.name}, Mask stats: min={seg_mask.min()}, max={seg_mask.max()}, mean={seg_mask.mean()}')
 
-        # 确定输出文件路径
         if args.out_dir:
             out_file = Path(args.out_dir) / (img_path.stem + '_mask.png')
         else:
             out_file = None
 
-        # 保存掩码
         if out_file:
             # print(111)
             # print(seg_mask)

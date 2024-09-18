@@ -12,6 +12,7 @@ import argparse
 import multiprocessing as mp
 import threading
 from random import choice
+import matplotlib.pyplot as plt
 import os
 import argparse
 from IPython.display import Image, display
@@ -20,7 +21,7 @@ from tqdm import tqdm
 
 
 LOW_RESOURCE = False 
-NUM_DIFFUSION_STEPS = 50
+NUM_DIFFUSION_STEPS = 100
 GUIDANCE_SCALE = 7.5
 MAX_NUM_WORDS = 77
 
@@ -56,7 +57,7 @@ VOC_category_list_check = {
     'sheep':['sheep'],
     'sofa':['sofa'],
     'train':['train'],
-    'tvmonitor':['monitor','tv']
+    'tvmonitor':['monitor','tv','monitor']
     }
 
 
@@ -224,7 +225,7 @@ class EmptyControl(AttentionControl):
     def forward (self, attn, is_cross: bool, place_in_unet: str):
         return attn
     
-    
+
 class AttentionStore(AttentionControl):
 
     @staticmethod
@@ -262,21 +263,6 @@ class AttentionStore(AttentionControl):
         self.step_store = self.get_empty_store()
         self.attention_store = {}
 
-
-# def get_equalizer(text: str, word_select: Union[int, Tuple[int, ...]], values: Union[List[float],
-#                   Tuple[float, ...]],tokenizer=None):
-#     if type(word_select) is int or type(word_select) is str:
-#         word_select = (word_select,)
-#     equalizer = torch.ones(len(values), 77)
-#     values = torch.tensor(values, dtype=torch.float32)
-# #     print(values)
-#     for word in word_select:
-#         inds = ptp_utils.get_word_inds(text, word, tokenizer)
-#         equalizer[:, inds] = values
-#     return equalizer
-
-
-
 from PIL import Image
 
 def aggregate_attention(attention_store: AttentionStore, res: int, from_where: List[str], is_cross: bool, select: int, prompts=None):
@@ -290,166 +276,104 @@ def aggregate_attention(attention_store: AttentionStore, res: int, from_where: L
                 out.append(cross_maps)
     out = torch.cat(out, dim=0)
     return out.cpu()
-
-
-# def mask_image(image, mask_2d, rgb=None, valid = False):
-#     h, w = mask_2d.shape
-
-#     mask_3d_color = np.zeros((h, w, 3), dtype="uint8")
-    
-        
-#     image.astype("uint8")
-#     mask = (mask_2d!=0).astype(bool)
-#     if rgb is None:
-#         rgb = np.random.randint(0, 255, (1, 3), dtype=np.uint8)
-        
-#     mask_3d_color[mask_2d[:, :] == 1] = rgb
-#     image[mask] = image[mask] * 0.2 + mask_3d_color[mask] * 0.8
-    
-#     if valid:
-#         mask_3d_color[mask_2d[:, :] == 1] = [[0,0,0]]
-#         kernel = np.ones((5,5),np.uint8)  
-#         mask_2d = cv2.dilate(mask_2d,kernel,iterations = 4)
-#         mask = (mask_2d!=0).astype(bool)
-#         image[mask] = image[mask] * 0 + mask_3d_color[mask] * 1
-#         return image,rgb
-        
-#     return image,rgb
-
-# def get_findContours(mask):
-#     mask_instance = (mask>0.5 * 1).astype(np.uint8) 
-#     ontours, hierarchy = cv2.findContours(mask_instance.copy(),cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
-    
-#     min_area = 0
-#     polygon_ins = []
-#     x,y,w,h = 0,0,0,0
-    
-#     image_h, image_w = mask.shape[0:2]
-#     gt_kernel = np.zeros((image_h,image_w), dtype='uint8')
-#     for cnt in ontours:
-#         x_ins_t, y_ins_t, w_ins_t, h_ins_t = cv2.boundingRect(cnt)
-
-#         if w_ins_t*h_ins_t<250:
-#             continue
-#         cv2.fillPoly(gt_kernel, [cnt], 1)
-
-#     return gt_kernel
                         
-def save_cross_attention(orignial_image,attention_store: AttentionStore, res: int, from_where: List[str], select: int = 0,out_put="./test_1.jpg",image_cnt=0,class_one=None,prompts=None , tokenizer=None,mask_diff=None):
-    
-#     ("up", "down")
-#     ("mid", "up", "down")
-
+def save_cross_attention(orignial_image, attention_store: AttentionStore, res: int, from_where: List[str], select: int = 0, out_put="./test_1.jpg", image_cnt=0, prompts=None, tokenizer=None, mask_diff=None):
     orignial_image = orignial_image.copy()
     show = True
     tokens = tokenizer.encode(prompts[select])
-    # print(prompts[select])
     decoder = tokenizer.decode
-    
-    # "up", "down"
-    attention_maps_8s = aggregate_attention(attention_store, 8, ("up", "mid", "down"), True, select,prompts=prompts)
+
+    attention_maps_8s = aggregate_attention(attention_store, 8, ("up", "mid", "down"), True, select, prompts=prompts)
     attention_maps_8s = attention_maps_8s.sum(0) / attention_maps_8s.shape[0]
-    
-    
-    attention_maps = aggregate_attention(attention_store, 16, from_where, True, select,prompts=prompts)
+
+    attention_maps = aggregate_attention(attention_store, 16, from_where, True, select, prompts=prompts)
     attention_maps = attention_maps.sum(0) / attention_maps.shape[0]
-    
-    attention_maps_32 = aggregate_attention(attention_store, 32, from_where, True, select,prompts=prompts)
+
+    attention_maps_32 = aggregate_attention(attention_store, 32, from_where, True, select, prompts=prompts)
     attention_maps_32 = attention_maps_32.sum(0) / attention_maps_32.shape[0]
-    
-    attention_maps_64 = aggregate_attention(attention_store, 64, from_where, True, select,prompts=prompts)
+
+    attention_maps_64 = aggregate_attention(attention_store, 64, from_where, True, select, prompts=prompts)
     attention_maps_64 = attention_maps_64.sum(0) / attention_maps_64.shape[0]
-    
+
+    image_list = []
 
     cam_dict = {}
     for idx, class_one in enumerate(coco_category_list):
-        
-        gt_kernel_final = np.zeros((512,512), dtype='float32')
+        gt_kernel_final = np.zeros((512, 512), dtype='float32')
         number_gt = 0
+
         for i in range(len(tokens)):
-            class_current = decoder(int(tokens[i])) 
-            
+            class_current = decoder(int(tokens[i]))
+            print(f"Token idx: {i}, Token name: {class_current}")
             category_list_check = VOC_category_list_check[class_one]
             if class_current not in category_list_check:
-                # print(111)
                 continue
-            
+
             image_8 = attention_maps_8s[:, :, i]
             image_8 = cv2.resize(image_8.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
             image_8 = image_8 / image_8.max()
-            
+
             image_16 = attention_maps[:, :, i]
             image_16 = cv2.resize(image_16.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
             image_16 = image_16 / image_16.max()
-            
+
             image_32 = attention_maps_32[:, :, i]
             image_32 = cv2.resize(image_32.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
             image_32 = image_32 / image_32.max()
-            
+
             image_64 = attention_maps_64[:, :, i]
             image_64 = cv2.resize(image_64.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
             image_64 = image_64 / image_64.max()
-            
-            if class_one == "sofa" or class_one == "train" or class_one == "tvmonitor":
+
+            if class_one in ["sofa", "train", "tvmonitor"]:
                 image = image_8
             elif class_one == "diningtable":
                 image = image_16
             else:
                 image = (image_16 + image_32 + image_64) / 3
-#                 image = image_8
-            
+
             gt_kernel_final += image.copy()
+            image_list.append((image.copy(), class_one))
             number_gt += 1
 
-        if number_gt!=0:
-            gt_kernel_final = gt_kernel_final/number_gt
-        
+        if number_gt != 0:
+            gt_kernel_final = gt_kernel_final / number_gt
+
         id_ = coco_category_to_id_v1[class_one]
         cam_dict[id_] = gt_kernel_final
-        
-#         for i in range(20):
-#             if i == id_:
-#                 cam_dict[i] = gt_kernel_final
-#             else:
-#                 image_h, image_w = gt_kernel_final.shape[0:2]
-#                 gt_kernel = np.zeros((image_h,image_w), dtype='uint8')
-#                 cam_dict[i] = gt_kernel
 
-    np.save(out_put, cam_dict)
+    save_path = out_put
+    os.makedirs(save_path, exist_ok=True)
 
+    for idx, (array, class_name) in enumerate(image_list):
+        file_name = f"array_{class_name}_{idx}.npy"
+        file_path = os.path.join(save_path, file_name)
+        np.save(file_path, array)
+
+    print(f"Saved attention files to {save_path}")
     
+def run(prompts, controller, latent=None, generator=None, out_put="", ldm_stable=None):
+    images_here, x_t = ptp_utils.text2image_ldm_stable(
+        ldm_stable,
+        prompts,
+        controller,
+        latent=latent,
+        num_inference_steps=NUM_DIFFUSION_STEPS,
+        guidance_scale=7,
+        generator=generator,
+        low_resource=LOW_RESOURCE
+    )
 
-# def show_self_attention_comp(attention_store: AttentionStore, res: int, from_where: List[str],
-#                         max_com=10, select: int = 0):
-#     attention_maps = aggregate_attention(attention_store, res, from_where, False, select).numpy().reshape((res ** 2, res ** 2))
-#     u, s, vh = np.linalg.svd(attention_maps - np.mean(attention_maps, axis=1, keepdims=True))
-#     images = []
-#     for i in range(max_com):
-#         image = vh[i].reshape(res, res)
-#         image = image - image.min()
-#         image = 255 * image / image.max()
-#         image = np.repeat(np.expand_dims(image, axis=2), 3, axis=2).astype(np.uint8)
-#         image = Image.fromarray(image).resize((256, 256))
-#         image = np.array(image)
-#         images.append(image)
-#     ptp_utils.view_images(np.concatenate(images, axis=1))
-    
-    
-def run(prompts, controller, latent=None, generator=None,out_put = "",ldm_stable=None):
-
-    images_here, x_t = ptp_utils.text2image_ldm_stable(ldm_stable, prompts, controller, latent=latent, num_inference_steps=NUM_DIFFUSION_STEPS, guidance_scale=7, generator=generator, low_resource=LOW_RESOURCE)
-
-    ptp_utils.view_images(images_here,out_put = out_put)
+    ptp_utils.view_images(images_here, out_put=out_put)
     return images_here, x_t
 
 
 def sub_processor(pid, args, prompts_list):
     torch.cuda.set_device(pid)
-    text = 'processor %d' % pid
-    print(text)
+    print(f'Processor {pid} started.')
 
     LOW_RESOURCE = False 
-    NUM_DIFFUSION_STEPS = 50
+    NUM_DIFFUSION_STEPS = 100
     GUIDANCE_SCALE = 7.5
     MAX_NUM_WORDS = 77
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -470,16 +394,26 @@ def sub_processor(pid, args, prompts_list):
     for rand in range(number_per_thread_num):
         g_cpu = torch.Generator().manual_seed(image_cnt)
         prompts = [prompts_list[rand % len(prompts_list)]]
-        print(image_cnt)
-        prompts[0] += args.classes
-        print(prompts)
+        print(f"Image count: {image_cnt}")
+        print(f"Prompts: {prompts}")
 
         controller = AttentionStore()
         image_cnt += 1
-        image, x_t = run(prompts, controller, latent=None, generator=g_cpu, out_put=os.path.join(image_path, "image_{}_{}.jpg".format(args.classes, image_cnt)), ldm_stable=ldm_stable)
-        save_cross_attention(image[0].copy(), controller, res=32, from_where=("up", "down"), out_put=os.path.join(npy_path, "image_{}_{}".format(args.classes, image_cnt)), image_cnt=image_cnt, class_one=args.classes, prompts=prompts, tokenizer=tokenizer)
+        image_out_path = os.path.join(image_path, f"image_{args.classes}_{image_cnt}.jpg")
+        image, x_t = run(prompts, controller, latent=None, generator=g_cpu, out_put=image_out_path, ldm_stable=ldm_stable)
+        attention_output_dir = os.path.join(npy_path, f"image_{args.classes}_{image_cnt}")
+        save_cross_attention(
+            image[0].copy(),
+            controller,
+            res=32,
+            from_where=("up", "down"),
+            out_put=attention_output_dir,
+            image_cnt=image_cnt,
+            prompts=prompts,
+            tokenizer=tokenizer
+        )
 
-    
+        
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--classes", default="dog", type=str)
@@ -490,19 +424,17 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    args.output = os.path.join(args.output, "VOC_Multi_Attention_{}_sub_{}_sample".format(args.classes, args.image_number))
+    args.output = os.path.join(args.output, f"VOC_Multi_Attention_{args.classes}_sub_{args.image_number}_sample_TWO")
     if not os.path.exists(args.output):
         os.makedirs(args.output)
     
-    with open('/home/zhuyifan/Cyan_A40/SAMDiffusion/prompt_engineer/voc_output.json', 'r') as f:
+    with open('/home/zhuyifan/Cyan_A40/SAMDiffusion/prompt_engineer/cat_sentences.json', 'r') as f:
         data = json.load(f)
     
     if args.classes not in data:
         raise ValueError(f"Class {args.classes} not found in JSON data")
     
     prompts_list = data[args.classes]
-    # for prompt in prompts_list:
-    #     prompt += args.classes
     total_prompts = len(prompts_list)
     prompts_per_thread = total_prompts // args.thread_num
     if total_prompts % args.thread_num != 0:
@@ -520,6 +452,3 @@ if __name__ == '__main__':
 
     for p in processes:
         p.join()
-
-
-
