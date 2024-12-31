@@ -2,22 +2,20 @@
 
 
 
-# DiffuMask (ICCV 2023)
-DiffuMask: Synthesizing Images with Pixel-level Annotations for Semantic Segmentation Using Diffusion Models
+# SAMDiffusion
+SAMDiffusion: Semantic Segmentation with Diffusion Model and Segmentation Anything Model
 
 <p align="center">
 <img src="./1684329483514.jpg" width="800px"/>  
 <br>
 </p>
 
-
-## :hammer_and_wrench: Getting Started with DiffuMask
 ### Conda env installation
 
 ```sh
-conda create -n DiffuMask python=3.8
+conda create -n SAMDiffusion python=3.8
 
-conda activate DiffuMask
+conda activate SAMDiffusion
 ```
 
 ```
@@ -42,9 +40,8 @@ https://github.com/pesser/stable-diffusion/issues/14
 sh ./script/DiffusionGeneration/VOC_data_generation.sh
 ```
 
-### 2. Refine Mask with AffinityNet (Coarse Mask)
+### 2. Prepare SAM2
 
-We also offer the AffinityNet weight for the 'dog' class on [Google Drive](https://drive.google.com/file/d/1rZJRUl-bCDNTFwGbCg6EO8GrtXcjguiJ/view?usp=sharing) and 'bird' class on [Google drive](https://drive.google.com/file/d/1622_4opTZko0COXuWN_RZ8ZGhioyVeqo/view?usp=sharing).
 ```
 # prepare training data for affinity net
 sh ./script/prepare_aff_data.sh
@@ -76,18 +73,5 @@ To start training the model, please note the following points:
 
 ### 4. Training Mask2former with clear data
 
-
+### 5. Our Synthetic Dataset
 We are providing synthetic data for the "dog" category here with [Baidu Drive](https://pan.baidu.com/s/1rtr610DYrjgepDKBrMrmkQ) (password: 53rb) and "Bird" category  with [Baidu Drive](https://pan.baidu.com/s/1REbkL0Q5go9zzLzr36cHyg) (password: 8v7q). Feel free to use it.
-
-
-
-## Citation
-
-```
-@article{wu2023diffumask,
-  title={Diffumask: Synthesizing images with pixel-level annotations for semantic segmentation using diffusion models},
-  author={Wu, Weijia and Zhao, Yuzhong and Shou, Mike Zheng and Zhou, Hong and Shen, Chunhua},
-  journal={Proc. Int. Conf. Computer Vision (ICCV 2023)},
-  year={2023}
-}
-```

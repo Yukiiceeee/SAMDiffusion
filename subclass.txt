@@ -1,0 +1,202 @@
+4K TV: 4, k, tv
+8K TV: 8, k, tv
+Abyssinian: aby, ss, inian
+Adventure: adventure
+Age: age
+Airliner: air, liner
+American Crow: american, crow
+American Quarter Horse: american, quarter, horse
+American Robin: american, robin
+American Shorthair: american, shorth, air
+Angus: angus
+Appaloosa: app, al, oosa
+Arabian: arabian
+Armchair: armchair
+Articulated Bus: articul, ated, bus
+Attack aircraft: attack, aircraft
+BMX Bikes: bmx, bikes
+Bar stool: bar, stool
+Bean bag chair: bean, bag, chair
+Beef Cows: beef, cows
+Beer & Ale bottles: beer, &, ale, bottles
+Bengal: bengal
+Blue Jay: blue, jay
+Bomber aircraft: bomber, aircraft
+Bonsai: bonsai
+Bowrider Boats: bow, rider, boats
+Brahman: brah, man
+British Shorthair: british, shorth, air
+Bulls: bulls
+Cacti: cac, ti
+Calves: calves
+Cardinal: cardinal
+Catamaran Boats: cat, amar, an, boats
+Centre Console Boats: centre, console, boats
+Chesterfield Sofas: chesterfield, sof, as
+Chickadee: chick, adee
+Commuter Bus: commuter, bus
+Commuter Trains: commuter, trains
+Companion: companion
+Convertible: convertible
+Convertible Sofas: convertible, sof, as
+Corner Sofas: corner, sof, as
+Coupe: coupe
+Crossover: crossover
+Cruiser: cruiser
+Cruiser Bikes: cruiser, bikes
+Cuddy Cabins Boats: cu, ddy, cabins, boats
+Curved TV: curved, tv
+Cyclocross Bikes: cyclo, cross, bikes
+Dairy Breeds: dairy, breeds
+Dairy Cows: dairy, cows
+Deck Boats: deck, boats
+Devon Rex: devon, rex
+Diesel Trains: diesel, trains
+Dinghy Boats: dingh, y, boats
+Dining room chair: dining, room, chair
+Dirtbike: dirt, bike
+Double Deck Bus: double, deck, bus
+Draft Horses: draft, horses
+Drop-Leaf Dining Tables: drop, -, leaf, dining, tables
+Dual Purpose Breeds: dual, purpose, breeds
+Dual sport: dual, sport
+Education Level: education, level
+Electric Bikes: electric, bikes
+Electric Bus: electric, bus
+Electric Trains: electric, trains
+European Starling: european, starling
+Farmhouse Dining Tables: farmhouse, dining, tables
+Fat-Tailed Breeds: fat, -, tailed, breeds
+Ferns: ferns
+Fighter aircraft: fighter, aircraft
+Fine Wool Breeds: fine, wool, breeds
+Fishing Boats: fishing, boats
+Flowering plants: flowering, plants
+Folding Bikes: folding, bikes
+Foliage plants: foliage, plants
+Food bottles & Canning jars: food, bottles, &, canning, jars
+Freight Trains: freight, trains
+Futon Sofas: fu, ton, sof, as
+Gaited Horses: ga, ited, horses
+Gender: gender
+General aviation airplanes: general, aviation, airplanes
+Glass Top Dining Tables: glass, top, dining, tables
+Gliders: gli, ders
+Grade Horses: grade, horses
+Guard: guard
+HDR TV: hdr, tv
+Hair Breeds: hair, breeds
+Hatchback: hatchback
+Heifers: hei, fers
+Helicopters: helicopters
+Herbs: herbs
+Herding: her, ding
+Heritage Breeds: heritage, breeds
+High-Density Polyethylene (HDPE) bottles: high, -, density, polye, th, ylene, (, hd, pe, ), bottles
+High-Speed Trains: high, -, speed, trains
+Holsteins: hol, ste, ins
+Hound: hound
+Houseboats: house, boats
+Houseplants: house, plants
+Hybrid Bikes: hybrid, bikes
+Jerseys: jerseys
+Kneeling chair: kne, eling, chair
+LCD: lcd
+LED: led
+Light Rail Trains: light, rail, trains
+Liquor/Spirits bottles: liquor, /, spirits, bottles
+Long Wool Breeds: long, wool, breeds
+Lounge chair: lounge, chair
+Loveseats/Settees: love, seats, /, set, tees
+Lower Class: lower, class
+Maine Coon: maine, coon
+Meat Breeds: meat, breeds
+Medicinal/Chemical/Druggist bottles: medicinal, /, chemical, /, drug, gist, bottles
+Metal Dining Tables: metal, dining, tables
+Metro/Subway Trains: metro, /, subway, trains
+Middle Class: middle, class
+Mini-LED: mini, -, led
+Minibus: mini, bus
+Minivan: mini, van
+Minor Breeds: minor, breeds
+Mixed-Breed: mixed, -, breed
+Moped: mo, ped
+Morgan: morgan
+Mountain Bikes: mountain, bikes
+Mourning Dove: mourning, dove
+Naked: naked
+Non-Sporting: non, -, sporting
+Northern Cardinal: northern, cardinal
+OLED: oled
+Observation Cars: observation, cars
+Observation aircraft: observation, aircraft
+Observation bottles: observation, bottles
+Occupation: occupation
+Office chair: office, chair
+Orchids: orchids
+Oxen: ox, en
+Palms: palms
+Passenger Trains: passenger, trains
+Pedestal Dining Tables: pede, stal, dining, tables
+Persian: persian
+Pickup Truck: pickup, truck
+Polyethylene Terephthalate (PET) bottles: polye, th, ylene, tere, ph, thal, ate, (, pet, ), bottles
+Ponies: ponies
+Pontoon Boats: pon, toon, boats
+QLED: q, led
+Race: race
+Ragdoll: rag, doll
+Recliner Sofas: re, clin, er, sof, as
+Recliner chair: re, clin, er, chair
+Rectangular Dining Tables: rectangular, dining, tables
+Recumbent Bikes: re, cumb, ent, bikes
+Religion: religion
+Rigid Bus: rigid, bus
+Road Bikes: road, bikes
+Rocking chair: rocking, chair
+Round Dining Tables: round, dining, tables
+Russian Blue: russian, blue
+SUV: suv
+Sailboats: sail, boats
+School Bus: school, bus
+Scooter: scoo, ter
+Scottish Fold: scottish, fold
+Sectional Sofas: sectional, sof, as
+Sedan: sedan
+Sensory bottles: sensory, bottles
+Show Breeds: show, breeds
+Shuttle Bus: shuttle, bus
+Siamese: siamese
+Single Deck Bus: single, deck, bus
+Sleeper Sofas: sleeper, sof, as
+Smart TV: smart, tv
+Soda & Mineral Water bottles: soda, &, mineral, water, bottles
+Sphynx: sphy, nx
+Sporting: sporting
+Sports Car: sports, car
+Sports tourer: sports, tou, rer
+Sportsbike: sports, bike
+Square Dining Tables: square, dining, tables
+Standard Three-Seater Sofas: standard, three, -, seater, sof, as
+Standard Two-Seater Sofas: standard, two, -, seater, sof, as
+Station Wagon: station, wagon
+Steam Trains: steam, trains
+Steller's Jay: st, eller, 's, jay
+Strategic reconnaissance aircraft: strategic, recon, naissance, aircraft
+Succulents: succul, ents
+Tandem Bikes: tandem, bikes
+Terrier: terrier
+Thoroughbred: thoroughbred
+Tourer: tou, rer
+Tourist Bus: tourist, bus
+Toy: toy
+Traditional Dining Tables: traditional, dining, tables
+Transport aircraft: transport, aircraft
+Tufted Titmouse: tu, fted, tit, mouse
+Upper Class: upper, class
+Warmbloods: war, mb, loo, ds
+Wine & Champagne bottles: wine, &, champagne, bottles
+Wood Dining Tables: wood, dining, tables
+Work chair: work, chair
+Working: working
+Working Class: working, class

@@ -12,23 +12,28 @@ import argparse
 import multiprocessing as mp
 import threading
 from random import choice
+import matplotlib.pyplot as plt
 import os
 import argparse
 from IPython.display import Image, display
 from clip_retrieval.clip_client import ClipClient, Modality
 from tqdm import tqdm
-import difflib
-
+from random import choice
+from matplotlib.colors import LinearSegmentedColormap
 LOW_RESOURCE = False 
 NUM_DIFFUSION_STEPS = 50
 GUIDANCE_SCALE = 7.5
 MAX_NUM_WORDS = 77
 
-
 coco_category_list_check_person = [    
-    "arm", "person", "man", "woman", 
-    "child", "boy", "girl", "teenager",
-    "people", "human", "pedestrian"
+    "arm",
+    'person',
+    "man",
+    "woman",
+    "child",
+    "boy",
+    "girl",
+    "teenager"
 ]
 
 
@@ -325,7 +330,6 @@ classes = {
     79: 'hair drier',
     80: 'toothbrush'
 }
-
 class LocalBlend:
 
     def __call__(self, x_t, attention_store):
@@ -398,7 +402,7 @@ class EmptyControl(AttentionControl):
     def forward (self, attn, is_cross: bool, place_in_unet: str):
         return attn
     
-    
+
 class AttentionStore(AttentionControl):
 
     @staticmethod
@@ -436,8 +440,56 @@ class AttentionStore(AttentionControl):
         self.step_store = self.get_empty_store()
         self.attention_store = {}
 
-
 from PIL import Image
+def visualize_and_save(data, output_path):
+    
+    normalized_map = (data - np.min(data)) / (np.max(data) - np.min(data)) * 255
+    normalized_map = normalized_map.astype(np.uint8)
+
+    
+    green_cmap = LinearSegmentedColormap.from_list('green_cmap', ['white', 'green'])
+
+   
+    plt.imshow(normalized_map, cmap=green_cmap, interpolation='nearest')
+    plt.axis('off')
+    plt.colorbar(label='Attention Strength')
+    plt.savefig(output_path, bbox_inches='tight')
+    plt.close()
+
+    print(f"attention images saved {output_path}")
+
+def extract_classes_from_prompt(prompt: str) -> List[str]:
+    
+    words = prompt.split(" ")
+    class1 = words[3]  
+    class2 = words[4]  
+    return [class1, class2]
+
+def get_related_classes(classes, relationship_file):
+   
+    related_classes = []
+    with open(relationship_file, 'r') as f:
+        for line in f:
+            category, related = line.strip().split(': ')
+            if category == classes:
+                related_classes = related.split(', ')
+                break
+    if not related_classes:
+        raise ValueError(f"No related classes found for {classes}")
+    return related_classes
+
+def generate_prompt_template(classes, related_classes, used_related_classes):
+
+    available_classes = [cls for cls in related_classes if cls not in used_related_classes]
+    if not available_classes:
+        used_related_classes.clear()  
+        available_classes = related_classes  
+
+    selected_class = choice(available_classes)
+    used_related_classes.add(selected_class)
+    
+    prompt = selected_class
+    return prompt
 
 def aggregate_attention(attention_store: AttentionStore, res: int, from_where: List[str], is_cross: bool, select: int, prompts=None):
     out = []
@@ -450,31 +502,20 @@ def aggregate_attention(attention_store: AttentionStore, res: int, from_where: L
                 out.append(cross_maps)
     out = torch.cat(out, dim=0)
     return out.cpu()
-
-def load_subclass_mappings(file_path):
-    subclass_mappings = {}
-    with open(file_path, 'r') as f:
-        for line in f:
-           
-            subclass, tokens = line.split(':')
-           
-            subclass_mappings[subclass.strip()] = [t.strip() for t in tokens.split(',')]
-    return subclass_mappings
-
-def save_cross_attention(orignial_image, attention_store: AttentionStore, res: int, from_where: List[str], 
-                         select: int = 0, out_put="./test_1.jpg", image_cnt=0, class_one=None, 
-                         prompts=None, tokenizer=None, subclass_tokens=None):
+                        
+def save_cross_attention_each_token(orignial_image, attention_store: AttentionStore, res: int, from_where: List[str], 
+                                     select: int = 0, out_put="./test_1", image_cnt=0, prompts=None, tokenizer=None):
     
     orignial_image = orignial_image.copy()
-    show = True
     tokens = tokenizer.encode(prompts[select])
     decoder = tokenizer.decode
 
+    
     attention_maps_8s = aggregate_attention(attention_store, 8, ("up", "mid", "down"), True, select, prompts=prompts)
     attention_maps_8s = attention_maps_8s.sum(0) / attention_maps_8s.shape[0]
 
-    attention_maps = aggregate_attention(attention_store, 16, from_where, True, select, prompts=prompts)
-    attention_maps = attention_maps.sum(0) / attention_maps.shape[0]
+    attention_maps_16 = aggregate_attention(attention_store, 16, from_where, True, select, prompts=prompts)
+    attention_maps_16 = attention_maps_16.sum(0) / attention_maps_16.shape[0]
 
     attention_maps_32 = aggregate_attention(attention_store, 32, from_where, True, select, prompts=prompts)
     attention_maps_32 = attention_maps_32.sum(0) / attention_maps_32.shape[0]
@@ -482,33 +523,108 @@ def save_cross_attention(orignial_image, attention_store: AttentionStore, res: i
     attention_maps_64 = aggregate_attention(attention_store, 64, from_where, True, select, prompts=prompts)
     attention_maps_64 = attention_maps_64.sum(0) / attention_maps_64.shape[0]
 
+    
+    prompt_name = prompts[select].replace(" ", "_")
+    save_folder = os.path.join(out_put, f"image_{image_cnt}_{prompt_name}")
+    os.makedirs(save_folder, exist_ok=True)
+
+    
+    for i, token in enumerate(tokens):
+        token_name = decoder(int(token)).strip()
+        if not token_name:  
+            continue
+        
+       
+        image_8 = attention_maps_8s[:, :, i]
+        image_16 = attention_maps_16[:, :, i]
+        image_32 = attention_maps_32[:, :, i]
+        image_64 = attention_maps_64[:, :, i]
+
+        
+        image_8 = cv2.resize(image_8.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
+        image_16 = cv2.resize(image_16.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
+        image_32 = cv2.resize(image_32.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
+        image_64 = cv2.resize(image_64.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
+
+        
+        image_8 = image_8 / image_8.max()
+        image_16 = image_16 / image_16.max()
+        image_32 = image_32 / image_32.max()
+        image_64 = image_64 / image_64.max()
+
+        
+        combined_attention_map = (image_8 + image_16 + image_32 + image_64) / 4
+
+        
+        token_folder = os.path.join(save_folder, f"token_{i}_{token_name}")
+        os.makedirs(token_folder, exist_ok=True)
+
+        
+        output_path = os.path.join(token_folder, f"attention_map_{i}_{token_name}.png")
+        visualize_and_save(combined_attention_map, output_path)
+
+        
+        npy_file_path = os.path.join(token_folder, f"attention_map_{i}_{token_name}.npy")
+        if os.path.exists(npy_file_path):
+            os.remove(npy_file_path)
+            print(f"delete .npy file: {npy_file_path}")
+
+def save_cross_attention(orignial_image,attention_store: AttentionStore, res: int, from_where: List[str], select: int = 0,out_put="./test_1.jpg",image_cnt=0,class_one=None,prompts=None , tokenizer=None,mask_diff=None):
+    
+
+
+    orignial_image = orignial_image.copy()
+    show = True
+    tokens = tokenizer.encode(prompts[select])
+    
+    decoder = tokenizer.decode
+    
+    # "up", "down"
+    attention_maps_8s = aggregate_attention(attention_store, 8, ("up", "mid", "down"), True, select,prompts=prompts)
+    attention_maps_8s = attention_maps_8s.sum(0) / attention_maps_8s.shape[0]
+    
+    
+    attention_maps = aggregate_attention(attention_store, 16, from_where, True, select,prompts=prompts)
+    attention_maps = attention_maps.sum(0) / attention_maps.shape[0]
+    
+    attention_maps_32 = aggregate_attention(attention_store, 32, from_where, True, select,prompts=prompts)
+    attention_maps_32 = attention_maps_32.sum(0) / attention_maps_32.shape[0]
+    
+    attention_maps_64 = aggregate_attention(attention_store, 64, from_where, True, select,prompts=prompts)
+    attention_maps_64 = attention_maps_64.sum(0) / attention_maps_64.shape[0]
+    
+    image_list = []
+
     cam_dict = {}
     for idx, class_one in enumerate(coco_category_list):
-        gt_kernel_final = np.zeros((512, 512), dtype='float32')
+        
+        gt_kernel_final = np.zeros((512,512), dtype='float32')
         number_gt = 0
+        
         for i in range(len(tokens)):
-            class_current = decoder(int(tokens[i]))
-
+            class_current = decoder(int(tokens[i])) 
             
-            if not any(difflib.get_close_matches(class_current.lower(), [token.lower() for token in subclass_tokens], n=1, cutoff=0.6)):
+            category_list_check = VOC_category_list_check[class_one]
+            if class_current not in category_list_check:
+                
                 continue
-
+            
             image_8 = attention_maps_8s[:, :, i]
             image_8 = cv2.resize(image_8.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
             image_8 = image_8 / image_8.max()
-
+            
             image_16 = attention_maps[:, :, i]
             image_16 = cv2.resize(image_16.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
             image_16 = image_16 / image_16.max()
-
+            
             image_32 = attention_maps_32[:, :, i]
             image_32 = cv2.resize(image_32.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
             image_32 = image_32 / image_32.max()
-
+            
             image_64 = attention_maps_64[:, :, i]
             image_64 = cv2.resize(image_64.numpy(), (512, 512), interpolation=cv2.INTER_CUBIC)
             image_64 = image_64 / image_64.max()
-
+            
             if class_one == "sofa" or class_one == "train" or class_one == "tvmonitor":
                 image = image_8
             elif class_one == "diningtable":
@@ -516,44 +632,53 @@ def save_cross_attention(orignial_image, attention_store: AttentionStore, res: i
             else:
                 image = (image_16 + image_32 + image_64) / 3
 
+
             gt_kernel_final += image.copy()
+            image_list.append((image.copy(), class_one))
             number_gt += 1
 
-        if number_gt != 0:
-            gt_kernel_final = gt_kernel_final / number_gt
-
+        if number_gt!=0:
+            gt_kernel_final = gt_kernel_final/number_gt
+        
         id_ = coco_category_to_id_v1[class_one]
         cam_dict[id_] = gt_kernel_final
 
-    np.save(out_put, cam_dict)
     
+    save_path = out_put
+    os.makedirs(save_path, exist_ok=True)
 
+    for idx, (array, class_name) in enumerate(image_list):
+        
 
-    
+        file_name = f"array_{class_name}_{idx}.npy"
+        file_path = os.path.join(save_path, file_name)
+        np.save(file_path, array)
     
 def run(prompts, controller, latent=None, generator=None,out_put = "",ldm_stable=None):
 
-    images_here, x_t = ptp_utils.text2image_ldm_stable(ldm_stable, prompts, controller, latent=latent, num_inference_steps=NUM_DIFFUSION_STEPS, guidance_scale=7, generator=generator, low_resource=LOW_RESOURCE)
+    images_here, x_t = ptp_utils.text2image_ldm_stable_multiple(ldm_stable, prompts, controller, latent=latent, num_inference_steps=NUM_DIFFUSION_STEPS, guidance_scale=7, generator=generator, low_resource=LOW_RESOURCE,voc_categories=VOC_category_list_check)
 
-    ptp_utils.view_images(images_here,out_put = out_put)
+    ptp_utils.view_images(images_here, out_put = out_put)
     return images_here, x_t
 
-
-def sub_processor(pid, args, thread_prompts_list, prompts_data, subclass_mappings):
+def sub_processor(pid, args, related_classes):
     torch.cuda.set_device(pid)
-    text = 'processor %d' % pid
-    print(text)
+    text = f'Processor {pid}'
+    
 
     LOW_RESOURCE = False 
     NUM_DIFFUSION_STEPS = 50
     GUIDANCE_SCALE = 7.5
     MAX_NUM_WORDS = 77
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    ldm_stable = StableDiffusionPipeline.from_pretrained("/home/xiangchao/.cache/huggingface/hub/models--CompVis--stable-diffusion-v1-4/snapshots/133a221b8aa7292a167afc5127cb63fb5005638b", use_auth_token=args.MY_TOKEN).to(device)
+    
+   
+    ldm_stable = StableDiffusionPipeline.from_pretrained("/data/stable-diffusion-v1-4").to(device)
+    ldm_stable.enable_attention_slicing()
     tokenizer = ldm_stable.tokenizer
 
     number_per_thread_num = int(int(args.image_number) / int(args.thread_num))
-    image_cnt = pid * number_per_thread_num + 200000
+    image_cnt = pid * number_per_thread_num + 200000 
 
     image_path = os.path.join(args.output, "train_image")
     npy_path = os.path.join(args.output, "npy")
@@ -563,26 +688,23 @@ def sub_processor(pid, args, thread_prompts_list, prompts_data, subclass_mapping
     if not os.path.exists(npy_path):
         os.makedirs(npy_path)
 
-    for rand in range(number_per_thread_num):
+    used_related_classes = set()  
+    
+    for _ in range(number_per_thread_num):
         g_cpu = torch.Generator().manual_seed(image_cnt)
         
-        
-        prompt, subclass = thread_prompts_list[rand % len(thread_prompts_list)]
-        
-        print(image_cnt)
-        print(prompt, subclass)  
+    
+        prompt = generate_prompt_template(args.classes, related_classes, used_related_classes)
+        print(f"Image count: {image_cnt}")
+        print(f"Prompt: {prompt}")
+
         controller = AttentionStore()
         image_cnt += 1
-        image, x_t = run([prompt], controller, latent=None, generator=g_cpu, 
-                         out_put=os.path.join(image_path, "image_{}_{}.jpg".format(args.classes, image_cnt)), 
-                         ldm_stable=ldm_stable)
-        
-        subclass_tokens = subclass_mappings.get(subclass, [])  
-        save_cross_attention(image[0].copy(), controller, res=32, from_where=("up", "down"),
-                             out_put=os.path.join(npy_path, "image_{}_{}".format(args.classes, image_cnt)), 
-                             image_cnt=image_cnt, class_one=args.classes, 
-                             prompts=[prompt], tokenizer=tokenizer, subclass_tokens=subclass_tokens)
-
+        image_out_path = os.path.join(image_path, f"image_{args.classes}_{image_cnt}.jpg")
+        image, x_t = run([prompt], controller, latent=None, generator=g_cpu, out_put=image_out_path, ldm_stable=ldm_stable)
+        attention_output_dir = os.path.join(npy_path, f"image_{args.classes}_{image_cnt}")
+        save_cross_attention(image[0].copy(), controller, res=32, from_where=("up", "down"), out_put=attention_output_dir, image_cnt=image_cnt, class_one=args.classes, prompts=[prompt], tokenizer=tokenizer)
+       
     
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -594,45 +716,32 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    args.output = os.path.join(args.output, "COCO_Multi_Attention_{}_sub_{}_NoClipRetrieval_sample".format(args.classes, args.image_number))
+    args.output = os.path.join(args.output, "COCO_Multi_Attention_{}_sub_{}_sample_TWO".format(args.classes, args.image_number))
     if not os.path.exists(args.output):
         os.makedirs(args.output)
     
-
-    with open('/d2/mxy/SAMDiffusion/generate/coco_output.json', 'r') as f:
-        prompts_data = json.load(f)
+    with open('/data2/mxy/SAMDiffusion/generate/coco_dual_output.json', 'r') as f:
+        data = json.load(f)
     
-    if args.classes not in prompts_data:
+    if args.classes not in data:
         raise ValueError(f"Class {args.classes} not found in JSON data")
     
-
-    subclass_mappings = load_subclass_mappings('/d2/mxy/SAMDiffusion/generate/subcategories_tokens.txt')  
-    
-
-    prompts_dict = prompts_data[args.classes]
-    
-  
-    prompts_list = list(prompts_dict.items())  
+    prompts_list = data[args.classes]
     
     total_prompts = len(prompts_list)
     prompts_per_thread = total_prompts // args.thread_num
     if total_prompts % args.thread_num != 0:
         prompts_per_thread += 1
-
+    
     mp = mp.get_context("spawn")
     processes = []
-    
-
     for i in range(args.thread_num):
         start_idx = i * prompts_per_thread
         end_idx = min(start_idx + prompts_per_thread, total_prompts)
         thread_prompts_list = prompts_list[start_idx:end_idx]
-        p = mp.Process(target=sub_processor, args=(i, args, thread_prompts_list, prompts_data, subclass_mappings))  # 传递提示词数据（提示词和子类对）及子类译码映射
+        p = mp.Process(target=sub_processor, args=(i, args, thread_prompts_list))
         p.start()
         processes.append(p)
 
     for p in processes:
         p.join()
-
-
-

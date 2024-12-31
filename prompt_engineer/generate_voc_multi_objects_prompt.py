@@ -1,209 +1,119 @@
-import openai
 import os
 import json
-import re
-from openai import OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")
-openai.base_url = "https://api.zhizengzeng.com/v1"
+import random
+import argparse
+from langchain.agents import load_tools, initialize_agent, AgentType
+from langchain.chat_models import ChatOpenAI
 
-voc_category_list = [
-    'aeroplane', 'bicycle', 'bird', 'boat', 'bottle',
-    'bus', 'car', 'cat', 'chair', 'cow', 'diningtable',
-    'dog', 'horse', 'motorbike', 'person', 'pottedplant',
-    'sheep', 'sofa', 'train', 'tvmonitor'
-]
 
-def generate_sentences(class_gen, num_categories, required_num, existing_sentences):
-    class_pool = [cls for cls in voc_category_list if cls != class_gen]
-    collected_sentences = []
+os.environ["SERPER_API_KEY"] = ""
+os.environ['OPENAI_API_KEY'] = ""
+os.environ['OPENAI_API_BASE'] = ""
 
-    # 定义类别模式，特殊处理 diningtable、tvmonitor 和 pottedplant
-    category_patterns = {}
-    for cls in voc_category_list:
-        if cls == 'diningtable':
-            # 拆分为 'dining' 和 'table'
-            category_patterns[cls] = [
-                re.compile(r'\b' + re.escape('dining') + r's?\b', re.IGNORECASE),
-                re.compile(r'\b' + re.escape('table') + r's?\b', re.IGNORECASE)
-            ]
-        elif cls == 'tvmonitor':
-            # 拆分为 'tv' 和 'monitor'
-            category_patterns[cls] = [
-                re.compile(r'\b' + re.escape('tv') + r's?\b', re.IGNORECASE),
-                re.compile(r'\b' + re.escape('monitor') + r's?\b', re.IGNORECASE)
-            ]
-        elif cls == 'pottedplant':
-            # 拆分为 'pot'、'plant' 和 'ted'
-            category_patterns[cls] = [
-                re.compile(r'\b' + re.escape('pot') + r's?\b', re.IGNORECASE),
-                re.compile(r'\b' + re.escape('plant') + r's?\b', re.IGNORECASE),
-                re.compile(r'\b' + re.escape('ted') + r's?\b', re.IGNORECASE)
-            ]
-        else:
-            category_patterns[cls] = [re.compile(r'\b' + re.escape(cls) + r's?\b', re.IGNORECASE)]
 
-    plural_to_singular = {
-        'aeroplanes': 'aeroplane',
-        'bicycles': 'bicycle',
-        'birds': 'bird',
-        'boats': 'boat',
-        'bottles': 'bottle',
-        'buses': 'bus',
-        'cars': 'car',
-        'cats': 'cat',
-        'chairs': 'chair',
-        'cows': 'cow',
-        'diningtables': 'diningtable',
-        'dogs': 'dog',
-        'horses': 'horse',
-        'motorbikes': 'motorbike',
-        'people': 'person',      
-        'pottedplants': 'pottedplant',
-        'sheep': 'sheep',        
-        'sofas': 'sofa',
-        'trains': 'train',
-        'tvmonitors': 'tvmonitor'
-    }
+prompt_sub_category = "Category: {}\n\nPlease list 2 common subcategories that belong to this category."
+prompt_sub_sentence = """
+Subcategory: {}\n\n
+Please create 2 realistic and detailed sentences that describe a {} {}.
+Ensure each sentence is vivid and includes visual elements.
+"""
 
-    for plural_form in plural_to_singular:
-        singular_form = plural_to_singular[plural_form]
-        if singular_form in ['diningtable', 'tvmonitor', 'pottedplant']:
-            continue  # 已经在上面处理
-        category_patterns[singular_form].append(re.compile(r'\b' + re.escape(plural_form) + r'\b', re.IGNORECASE))
 
-    while len(collected_sentences) < required_num:
-        other_classes = ', '.join(class_pool)
+voc_category_restrictions = {
+    'aeroplane': {'boat', 'train', 'bus', 'car'},
+    'bicycle': {'bird', 'bus', 'car', 'cat', 'cow', 'dog', 'horse', 'motorbike', 'person', 'sheep', 'train'},
+    'bird': {'aeroplane', 'bicycle', 'boat', 'bus', 'car', 'cat', 'cow', 'dog', 'horse', 'motorbike', 'person', 'pottedplant', 'sheep'},
+   
+}
 
-        if num_categories == 2:
-            prompt = f"""
-            Please generate 25 sentences that contain only two categories: "{class_gen}" and one other category from the following list:
-            [{other_classes}].
-            Ensure that each sentence includes exactly these two categories and no others.
-            The sentences should be natural and conform to everyday language usage.
-            """
-        elif num_categories == 3:
-            prompt = f"""
-            Please generate 25 sentences that contain only three categories: "{class_gen}" and two other categories from the following list:
-            [{other_classes}].
-            Ensure that each sentence includes exactly these three categories and no others.
-            The sentences should be natural and conform to everyday language usage.
-            """
-        else:
-            print("Invalid number of categories.")
-            return []
 
-        try:
-            client = OpenAI(base_url="https://api.zhizengzeng.com/v1", api_key="YOUR_API_KEY")
-            completion = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=[{"role": "user", "content": prompt}]
-            )
-        except Exception as e:
-            print(f"Error during API call: {e}")
-            return []
+llm = ChatOpenAI(
+    openai_api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv('OPENAI_API_BASE'),
+    model='gpt-3.5-turbo',
+    temperature=0.5,
+)
 
-        if not completion or not completion.choices:
-            print("API response does not contain valid choices.")
-            return []
+tools = load_tools(["google-serper"], llm=llm)
 
-        all_sentences = completion.choices[0].message.content
-        # print(all_sentences)
-        sentence_list = all_sentences.strip().split('\n')
 
-        for sentence in sentence_list:
-            clean_sentence = sentence.strip()
-            clean_sentence = re.sub(r'^\d+[\.\)]\s*', '', clean_sentence)
+def get_agent_resp(prompt):
+    agent = initialize_agent(tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, verbose=True)
+    response = agent.run(prompt)
+    return response
 
-            if clean_sentence in existing_sentences:
-                continue
 
-            categories_in_sentence = []
-            for cls, patterns in category_patterns.items():
-                match_found = False
-                for pattern in patterns:
-                    if pattern.search(clean_sentence):
-                        match_found = True
-                        break
-                if match_found:
-                    categories_in_sentence.append(cls)
+def parse_response_to_list(response):
+    lines = response.strip().split('\n')
+    return [line.strip('- ').strip() for line in lines if line]
 
-            categories_in_sentence = list(set(categories_in_sentence))
 
-            if len(categories_in_sentence) == num_categories:
+def generate_subcategories_and_sentences(category):
+    
+    json_file_path = "voc_output.json"
+    if os.path.exists(json_file_path):
+        with open(json_file_path, "r") as file:
+            data = json.load(file)
+    else:
+        data = {}
 
-                # 特殊处理 plural_to_singular，不处理 diningtable、tvmonitor 和 pottedplant
-                for plural_form, singular_form in plural_to_singular.items():
-                    if singular_form in ['diningtable', 'tvmonitor', 'pottedplant']:
-                        continue
-                    pattern = re.compile(r'\b' + re.escape(plural_form) + r'\b', re.IGNORECASE)
-                    clean_sentence = pattern.sub(singular_form, clean_sentence)
+    if category not in data:
+        data[category] = {}
 
-                updated_categories_in_sentence = []
-                for cls, patterns in category_patterns.items():
-                    match_found = False
-                    for pattern in patterns:
-                        if pattern.search(clean_sentence):
-                            match_found = True
-                            break
-                    if match_found:
-                        updated_categories_in_sentence.append(cls)
+    
+    sub_category_response = get_agent_resp(prompt_sub_category.format(category))
+    sub_categories = parse_response_to_list(sub_category_response)
 
-                if class_gen in updated_categories_in_sentence:
-                    other_categories = [cls for cls in updated_categories_in_sentence if cls != class_gen]
-                    if len(other_categories) == num_categories - 1:
-                        if all(cls in class_pool for cls in other_categories):
-                            collected_sentences.append(clean_sentence)
-                            existing_sentences.add(clean_sentence)
+    if len(sub_categories) != 2:
+        print(f"Error: '{category}' does not have exactly 10 subcategories.")
+        return
 
-            if len(collected_sentences) >= required_num:
-                break
+    
+    for sub_category in sub_categories:
+        
+        allowed_classes = list(voc_category_restrictions[category])
+        chosen_class = random.choice(allowed_classes)
 
-        if len(collected_sentences) < required_num:
-            print(f"Generated {len(collected_sentences)} sentences so far for class '{class_gen}'. Continuing generation...")
+        
+        chosen_sub_response = get_agent_resp(prompt_sub_category.format(chosen_class))
+        chosen_sub_categories = parse_response_to_list(chosen_sub_response)
 
-    return collected_sentences
+        
+        chosen_sub_category = random.choice(chosen_sub_categories)
+
+        
+        prompt = prompt_sub_sentence.format(sub_category, sub_category, category)
+        sentence_response = get_agent_resp(prompt)
+        sentences = parse_response_to_list(sentence_response)
+
+        
+        corrected_sentences = []
+        for sentence in sentences:
+            if category not in sentence:
+                sentence += f" ({category})"
+            if chosen_class not in sentence:
+                sentence += f" ({chosen_class})"
+            corrected_sentences.append(sentence)
+
+        data[category][sub_category] = corrected_sentences
+
+    
+    with open(json_file_path, "w") as file:
+        json.dump(data, file, indent=4, ensure_ascii=False)
+
+    print(f"Data for category '{category}' has been written to {json_file_path}")
+
 
 def main():
-    # JSON 文件的保存路径
-    save_path = '/home/zhuyifan/Cyan_A40/SAMDiffusion/prompt_engineer/voc_multiple_output.json'
-    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--category", required=True, type=str, help="The category to generate prompts for")
+    args = parser.parse_args()
 
-    # 检查是否已经存在 JSON 文件，如果存在则加载
-    if os.path.exists(save_path):
-        with open(save_path, 'r') as json_file:
-            category_prompts = json.load(json_file)
-    else:
-        category_prompts = {}
+    if args.category not in voc_category_restrictions:
+        print(f"Error: '{args.category}' is not a valid category.")
+        return
 
-    # 循环遍历所有类别
-    for cls in voc_category_list:
-        # 如果当前类别已经有对应的值，跳过
-        if cls in category_prompts and category_prompts[cls]:
-            print(f"Category '{cls}' already has prompts. Skipping.")
-            continue
-
-        print(f"Generating sentences for category '{cls}'")
-
-        # 用于跟踪此类别的已生成句子，防止重复
-        existing_sentences = set()
-
-        sentences_2 = generate_sentences(class_gen=cls, num_categories=2, required_num=75, existing_sentences=existing_sentences)
-        sentences_3 = generate_sentences(class_gen=cls, num_categories=3, required_num=25, existing_sentences=existing_sentences)
-
-        all_sentences = sentences_2 + sentences_3
-
-        if cls not in category_prompts:
-            category_prompts[cls] = []
-
-        for sentence in all_sentences:
-            if sentence not in category_prompts[cls]:
-                category_prompts[cls].append(sentence)
-
-        # 将更新后的类别提示词写入到 JSON 文件中
-        with open(save_path, 'w') as json_file:
-            json.dump(category_prompts, json_file, indent=4)
-
-        print(f"Saved prompts for category '{cls}' to {save_path}")
+    generate_subcategories_and_sentences(args.category)
 
 if __name__ == "__main__":
     main()

@@ -13,10 +13,10 @@ def splicing_1x2(root, out_root, image_list, n_image=100, start_id=0):
 
     for idx in tqdm(range(n_image)):
         image_1 = choice(image_list)
-        mask_1 = image_1.replace("jpg", "png")
+        mask_1 = image_1.replace(".jpg", ".png")
 
         image_2 = choice(image_list)
-        mask_2 = image_2.replace("jpg", "png")
+        mask_2 = image_2.replace(".jpg", ".png")
 
         if "jpg" not in image_1 or "jpg" not in image_2:
             continue
@@ -41,8 +41,8 @@ def splicing_1x2(root, out_root, image_list, n_image=100, start_id=0):
         image_resized = cv2.resize(image, (512, 512), interpolation=cv2.INTER_LINEAR)
         mask_resized = cv2.resize(mask, (512, 512), interpolation=cv2.INTER_NEAREST)
 
-        cv2.imwrite("{}/Image/splicing_{}.jpg".format(out_root, start_id), image_resized)
-        cv2.imwrite("{}/Mask/splicing_{}.png".format(out_root, start_id), mask_resized)
+        cv2.imwrite("{}/Image_4/splicing_{}.jpg".format(out_root, start_id), image_resized)
+        cv2.imwrite("{}/Mask_4/splicing_{}.png".format(out_root, start_id), mask_resized)
 
         start_id += 1
 
@@ -54,14 +54,14 @@ def splicing_NxN(root, out_root, image_list, n_image=100, start_id=0, size=2):
         list_mask = []
         for x in range(size):
             image_1 = choice(image_list)
-            mask_1 = image_1.replace("jpg", "png")
+            mask_1 = image_1.replace(".jpg", ".png")
 
             img1 = cv2.imread("{}/top_images/{}".format(root, image_1))
             mas1 = cv2.imread("{}/top_masks/{}".format(root, mask_1))
 
             for y in range(size - 1):
                 image_2 = choice(image_list)
-                mask_2 = image_2.replace("jpg", "png")
+                mask_2 = image_2.replace(".jpg", ".png")
 
                 img2 = cv2.imread("{}/top_images/{}".format(root, image_2))
                 mas2 = cv2.imread("{}/top_masks/{}".format(root, mask_2))
@@ -82,8 +82,8 @@ def splicing_NxN(root, out_root, image_list, n_image=100, start_id=0, size=2):
         image_resized = cv2.resize(list_image_ha, (512, 512), interpolation=cv2.INTER_LINEAR)
         mask_resized = cv2.resize(list_mask_ha, (512, 512), interpolation=cv2.INTER_NEAREST)
 
-        cv2.imwrite("{}/Image/splicing_{}.jpg".format(out_root, start_id), image_resized)
-        cv2.imwrite("{}/Mask/splicing_{}.png".format(out_root, start_id), mask_resized)
+        cv2.imwrite("{}/Image_4/splicing_{}.jpg".format(out_root, start_id), image_resized)
+        cv2.imwrite("{}/Mask_4/splicing_{}.png".format(out_root, start_id), mask_resized)
 
         start_id += 1
 
@@ -111,8 +111,8 @@ def main():
     )
     opt = parser.parse_args()
 
-    os.makedirs("{}/Image/".format(opt.out_root), exist_ok=True)
-    os.makedirs("{}/Mask/".format(opt.out_root), exist_ok=True)
+    os.makedirs("{}/Image_4/".format(opt.out_root), exist_ok=True)
+    os.makedirs("{}/Mask_4/".format(opt.out_root), exist_ok=True)
 
     image_list = os.listdir('{}/top_images'.format(opt.input_root))
 
@@ -123,33 +123,33 @@ def main():
     print('Start Generation')
     for i in range(opt.thread_num):
         if i == 0:
-            p = mp.Process(target=splicing_1x2, args=(opt.input_root, opt.out_root, image_list, 3000, 0))
+            p = mp.Process(target=splicing_1x2, args=(opt.input_root, opt.out_root, image_list, 8000, 0))
             p.start()
             processes.append(p)
         elif i == 1:
-            p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 200, 15001, 2))
+            p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 8000, 15001, 2))
             p.start()
             processes.append(p)
-        elif i == 2:
-            p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 100, 35001, 3))
-            p.start()
-            processes.append(p)
-        elif i == 3:
-            p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 100, 55001, 5))
-            p.start()
-            processes.append(p)
-        elif i == 4:
-            p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 1000, 65001, 6))
-            p.start()
-            processes.append(p)
-        elif i == 5:
-            p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 1000, 75001, 7))
-            p.start()
-            processes.append(p)
-        elif i == 6:
-            p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 1000, 85001, 8))
-            p.start()
-            processes.append(p)
+        # elif i == 2:
+        #     p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 2000, 35001, 3))
+        #     p.start()
+        #     processes.append(p)
+        # elif i == 3:
+        #     p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 1000, 55001, 5))
+        #     p.start()
+        #     processes.append(p)
+        # elif i == 4:
+        #     p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 1000, 65001, 6))
+        #     p.start()
+        #     processes.append(p)
+        # elif i == 5:
+        #     p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 1000, 75001, 7))
+        #     p.start()
+        #     processes.append(p)
+        # elif i == 6:
+        #     p = mp.Process(target=splicing_NxN, args=(opt.input_root, opt.out_root, image_list, 1000, 85001, 8))
+        #     p.start()
+        #     processes.append(p)
 
     for p in processes:
         p.join()

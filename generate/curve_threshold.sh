@@ -1,3 +1,0 @@
-# run aff_prepare.py
-# voc cityscapes
-python /home/xiangchao/home/muxinyu/SAMDiffusion/curve_threshold.py --voc12_root voc12 --initial_mask_dir /data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/sam_output  --out_crf /data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/refine_gt_crf --infer_list /data2/mxy/SAMDiffusion/DiffMask_VOC/VOC_Multi_Attention_cat_sub_1000_NoClipRetrieval_sample/train_image --dataset voc

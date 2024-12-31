@@ -101,6 +101,34 @@ def init_latent(latent, model, height, width, generator, batch_size):
     latents = latent.expand(batch_size,  model.unet.in_channels, height // 8, width // 8).to(model.device)
     return latent, latents
 
+def encode_prompt_with_voc_weights(model, prompt: str, voc_category_list_check: Dict[str, List[str]], weight: float = 1.5):
+    
+    
+    text_input = model.tokenizer(
+        prompt,
+        padding="max_length",
+        max_length=model.tokenizer.model_max_length,
+        truncation=True,
+        return_tensors="pt"
+    )
+
+    
+    text_embeddings = model.text_encoder(text_input.input_ids.to(model.device))[0]
+
+    
+    tokens = model.tokenizer.convert_ids_to_tokens(text_input.input_ids[0])
+    print(f"Tokenized prompt: {tokens}")  
+
+    
+    for i, token in enumerate(tokens):
+        for category, subwords in voc_category_list_check.items():
+            
+            if any(subword in token for subword in subwords):
+                print(f"Boosting weight for token: {token} (Category: {category})")
+                
+                text_embeddings[:, i, :] *= weight
+
+    return text_embeddings
 
 @torch.no_grad()
 def text2image_ldm(
@@ -157,7 +185,7 @@ def text2image_ldm_stable(
         return_tensors="pt",
     )
     text_embeddings = model.text_encoder(text_input.input_ids.to(model.device))[0]
-#     print(text_embeddings.shape)
+
     max_length = text_input.input_ids.shape[-1]
     uncond_input = model.tokenizer(
         [""] * batch_size, padding="max_length", max_length=max_length, return_tensors="pt"
@@ -169,7 +197,7 @@ def text2image_ldm_stable(
         context = torch.cat(context)
     latent, latents = init_latent(latent, model, height, width, generator, batch_size)
     
-    # set timesteps
+   
     extra_set_kwargs = {"offset": 1}
     model.scheduler.set_timesteps(num_inference_steps)
     for t in tqdm(model.scheduler.timesteps):
@@ -178,6 +206,60 @@ def text2image_ldm_stable(
     image = latent2image(model.vae, latents)
   
     return image, latent
+
+@torch.no_grad()
+def text2image_ldm_stable_multiple(
+    model,
+    prompt: str,
+    controller,
+    voc_categories: Dict[str, List[str]],   
+    num_inference_steps: int = 50,
+    guidance_scale: float = 7.5,
+    generator: Optional[torch.Generator] = None,
+    latent: Optional[torch.FloatTensor] = None,
+    low_resource: bool = False,
+):
+    register_attention_control(model,controller)
+   
+    text_embeddings = encode_prompt_with_voc_weights(
+        model, prompt, voc_categories, weight=1.4  
+    )
+    text_input = model.tokenizer(
+        prompt,
+        padding="max_length",
+        max_length=model.tokenizer.model_max_length,
+        truncation=True,
+        return_tensors="pt",
+    )
+    max_length = text_input.input_ids.shape[-1]
+    
+    batch_size = len(prompt) 
+    uncond_input = model.tokenizer(
+        [""] * batch_size,
+        padding="max_length",
+        max_length=max_length,
+        return_tensors="pt"
+    )
+    uncond_embeddings = model.text_encoder(uncond_input.input_ids.to(model.device))[0]
+
+    
+    context = [uncond_embeddings, text_embeddings]
+    if not low_resource:
+        context = torch.cat(context)
+
+    
+    latent, latents = init_latent(latent, model, 512, 512, generator, batch_size)
+
+   
+    model.scheduler.set_timesteps(num_inference_steps)
+    for t in tqdm(model.scheduler.timesteps):
+        latents = diffusion_step(model, controller, latents, context, t, guidance_scale, low_resource)
+
+    
+    image = latent2image(model.vae, latents)
+
+    return image, latent
+
 
 
 def register_attention_control(model, controller):
@@ -202,7 +284,7 @@ def register_attention_control(model, controller):
             tensor = tensor.permute(0, 2, 1, 3).reshape(batch_size // head_size, seq_len, dim * head_size)
             return tensor
 
-        # def forward(x, context=None, mask=None):
+        
         def forward(hidden_states, encoder_hidden_states=None, attention_mask=None, **cross_attention_kwargs):
             x = hidden_states
             context = encoder_hidden_states
@@ -227,10 +309,10 @@ def register_attention_control(model, controller):
                 mask = mask[:, None, :].repeat(h, 1, 1)
                 sim.masked_fill_(~mask, max_neg_value)
 
-            # attention, what we cannot get enough of
+            
             attn = sim.softmax(dim=-1)
-            attn = controller(attn, is_cross, place_in_unet) # 每一步注意力分数存储
-            # print("attn ")
+            attn = controller(attn, is_cross, place_in_unet) 
+           
             out = torch.einsum("b i j, b j d -> b i d", attn, v)
             out = reshape_batch_dim_to_heads(self,out)
             return to_out(out)
@@ -249,9 +331,7 @@ def register_attention_control(model, controller):
         controller = DummyController()
 
     def register_recr(net_, count, place_in_unet, module_name=None):
-        # if net_.__class__.__name__ == 'CrossAttention':
-        #     net_.forward = ca_forward(net_, place_in_unet)
-        #     return count + 1
+       
         if module_name in ["attn1", "attn2"]:
             net_.forward = ca_forward(net_, place_in_unet)
             return count + 1
@@ -333,16 +413,13 @@ def get_time_words_attention_alpha(prompts, num_steps, cross_replace_steps: Unio
 def latent2diff(vae, latents):
     latents = 1 / 0.18215 * latents
     image = vae.decode(latents)['sample']
-#     print(image.shape)
-    
-#     avgPool = nn.AvgPool2d(2)  #4*4的窗口，步长为4的平均池化
-#     image_1 = avgPool(image)
+
     
     diff_image = image[-1] - image[0]
     diff_mean = diff_image.abs().mean(dim=0)
     
     diff_norm = (diff_mean - diff_mean.min())/(diff_mean.max() - diff_mean.min())
-    # diff_image = (diff_normed > 0.5).float()
+    
     diff_norm = diff_norm.cpu()
 
 
@@ -388,7 +465,7 @@ def text2image_ldm_diff(
     latent, latents = init_latent(latent, model, height, width, generator, batch_size)
 
 
-    # set timesteps
+    
     extra_set_kwargs = {"offset": 1}
     model.scheduler.set_timesteps(num_inference_steps, **extra_set_kwargs)
 
@@ -433,12 +510,12 @@ def text2image_ldm_difflatent(
     diff = True
     if diff:
         text_embeddings = text_embeddings[0][None]
-    #     delta = torch.randn(text_embeddings.shape[-1])
+    
         delta = torch.ones(text_embeddings.shape[-1]) 
 
         delta = delta[None].to(text_embeddings)
         noise_text_embeddings = copy.deepcopy(text_embeddings)
-        # 1 77 768 noise_text_embeddings
+       
         noise_text_embeddings[:, 4] += delta
 
         context = [uncond_embeddings, text_embeddings,noise_text_embeddings]
@@ -451,7 +528,7 @@ def text2image_ldm_difflatent(
 
     latent, latents = init_latent(latent, model, height, width, generator, batch_size)
 
-    # set timesteps
+   
     extra_set_kwargs = {"offset": 1}
     model.scheduler.set_timesteps(num_inference_steps, **extra_set_kwargs)
 
