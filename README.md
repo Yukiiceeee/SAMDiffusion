@@ -49,4 +49,4 @@ Following the segmentation model framework from [mmsegmentation](https://github.
 we adopt the standard training configuration.
 
 ### 4. Our Synthetic Dataset
-We are providing synthetic data here with [Baidu Drive](https://pan.baidu.com/s/1rtr610DYrjgepDKBrMrmkQ) (password: 53rb). Feel free to use it.
+We are providing synthetic data here with [Baidu Drive](https://pan.baidu.com/s/1LW6ZlRv8w_83oq_xyUiY1g?pwd=abcd) (password: abcd). Feel free to use it.
